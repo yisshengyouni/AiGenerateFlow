@@ -12,10 +12,9 @@ This IntelliJ IDEA plugin analyzes method call chains at the current cursor posi
 
 ## Actions
 
-The plugin adds the following actions to the "Generate" menu:
+The plugin adds the following action to the "Generate" menu:
 
-1. **Generate UML Sequence Diagram** - Analyzes the method call chain and generates a UML sequence diagram using DeepSeek API
-2. **Enhanced UML Sequence Diagram** - Uses an improved method chain analysis algorithm and shows both the raw and enhanced diagrams
+1. **Generate UML Flow Diagram** - Generates UML flow diagram from method code using AI
 
 ## Configuration
 
@@ -32,38 +31,11 @@ Configure the plugin in Settings > UmlFlowAiConfigurable:
 4. It sends the diagram to DeepSeek API for enhancement (if configured)
 5. It displays the diagram(s) in a dialog
 
-## Implementation Details
 
-### Key Classes
+### Flow Diagram Generation
 
-- `EnhancedMethodChainVisitor` - Analyzes method call chains, including interfaces and implementations
-- `EnhancedSequenceDiagramAction` - Action to generate enhanced UML sequence diagrams
-- `MethodChainDeepSeekAction` - Action to generate UML sequence diagrams using DeepSeek API
-- `CallStack` - Represents the method call hierarchy
-- `MethodDescription` - Describes a method in the call hierarchy
+The plugin generates flow diagrams in PlantUML format, which can be rendered by PlantUML tools or online services.
 
-### Sequence Diagram Generation
-
-The plugin generates sequence diagrams in PlantUML format, which can be rendered by PlantUML tools or online services.
-
-Example:
-
-```
-@startuml
-participant ClassA
-participant ClassB
-participant ClassC
-
-ClassA -> ClassB: methodB(param1, param2)
-activate ClassB
-ClassB -> ClassC: methodC()
-activate ClassC
-ClassC --> ClassB: result
-deactivate ClassC
-ClassB --> ClassA: result
-deactivate ClassB
-@enduml
-```
 
 ## Requirements
 
