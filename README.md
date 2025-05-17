@@ -2,6 +2,10 @@
 
 This IntelliJ IDEA plugin analyzes method call chains at the current cursor position and generates UML sequence diagrams. It can also enhance these diagrams using the DeepSeek API.
 
+## Installation
+
+You can find the pre-built plugin package in the `distributions` directory of this repository.
+
 ## Features
 
 - Analyze method call chains starting from the method at the current cursor position
