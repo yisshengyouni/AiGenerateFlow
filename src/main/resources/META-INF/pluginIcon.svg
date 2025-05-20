@@ -1,10 +1,56 @@
-<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M32.0845 7.94025V4H24.0203V7.9896H16.029V4H7.91553V7.94025H4V36H16.0044V32.0045C16.0058 30.9457 16.4274 29.9308 17.1766 29.1826C17.9258 28.4345 18.9412 28.0143 20 28.0143C21.0588 28.0143 22.0743 28.4345 22.8234 29.1826C23.5726 29.9308 23.9942 30.9457 23.9956 32.0045V36H36V7.94025H32.0845Z" fill="url(#paint0_linear)"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+    <!-- Gradient definitions -->
     <defs>
-        <linearGradient id="paint0_linear" x1="2.94192" y1="4.89955" x2="37.7772" y2="39.7345" gradientUnits="userSpaceOnUse">
-            <stop offset="0.15937" stop-color="#3BEA62"/>
-            <stop offset="0.5404" stop-color="#3C99CC"/>
-            <stop offset="0.93739" stop-color="#6B57FF"/>
+        <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#6a9bff" />
+            <stop offset="100%" stop-color="#3b77e6" />
         </linearGradient>
+        <linearGradient id="nodeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ffffff" />
+            <stop offset="100%" stop-color="#f0f4ff" />
+        </linearGradient>
+        <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="6" />
+            <feOffset dx="2" dy="2" result="offsetblur" />
+            <feComponentTransfer>
+                <feFuncA type="linear" slope="0.3" />
+            </feComponentTransfer>
+            <feMerge>
+                <feMergeNode />
+                <feMergeNode in="SourceGraphic" />
+            </feMerge>
+        </filter>
     </defs>
+
+    <!-- Bright background -->
+    <rect fill="url(#bgGradient)" x="20" y="20" width="360" height="360" rx="70" ry="70" filter="url(#dropShadow)" />
+
+    <!-- Subtle border glow -->
+    <rect fill="none" stroke="#ffffff" stroke-width="6" stroke-opacity="0.5" x="26" y="26" width="348" height="348" rx="64" ry="64" />
+
+    <!-- Node boxes with shadow -->
+    <rect fill="url(#nodeGradient)" x="130" y="250" width="60" height="60" rx="12" ry="12" filter="url(#dropShadow)" />
+    <rect fill="url(#nodeGradient)" x="240" y="250" width="60" height="60" rx="12" ry="12" filter="url(#dropShadow)" />
+    <rect fill="url(#nodeGradient)" x="130" y="140" width="60" height="60" rx="12" ry="12" filter="url(#dropShadow)" />
+    <rect fill="url(#nodeGradient)" x="240" y="90" width="60" height="60" rx="12" ry="12" filter="url(#dropShadow)" />
+
+    <!-- Connections -->
+    <!-- Left to right horizontal connection -->
+    <path fill="none" stroke="#ffffff" stroke-width="4" stroke-dasharray="8 4" d="M190 280 L240 280" />
+    <polygon fill="#ffffff" points="236,274 246,280 236,286" />
+
+    <!-- Bottom left to top left -->
+    <path fill="none" stroke="#ffffff" stroke-width="4" stroke-dasharray="8 4" d="M160 250 L160 200" />
+
+    <!-- Top left to top right -->
+    <path fill="none" stroke="#ffffff" stroke-width="4" stroke-dasharray="8 4" d="M190 170 L240 170 L240 150" />
+
+    <!-- Top right to bottom right -->
+    <path fill="none" stroke="#ffffff" stroke-width="4" stroke-dasharray="8 4" d="M270 150 L270 200 L270 250" />
+
+    <!-- Additional glow effects -->
+    <circle fill="#ffffff" fill-opacity="0.3" cx="160" cy="280" r="4" />
+    <circle fill="#ffffff" fill-opacity="0.3" cx="270" cy="280" r="4" />
+    <circle fill="#ffffff" fill-opacity="0.3" cx="160" cy="170" r="4" />
+    <circle fill="#ffffff" fill-opacity="0.3" cx="270" cy="120" r="4" />
 </svg>
