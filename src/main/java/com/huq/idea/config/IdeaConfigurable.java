@@ -41,5 +41,6 @@ public class IdeaConfigurable implements Configurable {
         state.setBuildFlowPrompt(settingsComponent.getBuildFlowPrompt());
         state.setBuildMethodPrompt(settingsComponent.getBuildMethodPrompt());
         state.setUmlSequencePrompt(settingsComponent.getUmlSequencePrompt());
+        state.setPlantumlPathVal(settingsComponent.getPlantumlPathValue());
     }
 }

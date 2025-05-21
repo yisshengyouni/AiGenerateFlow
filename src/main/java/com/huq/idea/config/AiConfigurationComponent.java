@@ -12,8 +12,10 @@ public class AiConfigurationComponent {
     private JTextArea umlSequencePromptTextArea;
     private JTextField apiKeyText;
     private JPanel jPanel;
+    private JTextField plantumlPathVal;
 
     public void init(IdeaSettings.State state) {
+        plantumlPathVal.setText(state.getPlantumlPathVal());
         apiKeyText.setText(state.getApiKey());
         flowPromptTextArea.setText(state.getBuildFlowPrompt());
         methodPromptTextArea.setText(state.getBuildMethodPrompt());
@@ -54,5 +56,9 @@ public class AiConfigurationComponent {
 
     public String getUmlSequencePrompt() {
         return this.umlSequencePromptTextArea.getText();
+    }
+
+    public String getPlantumlPathValue() {
+        return this.plantumlPathVal.getText();
     }
 }

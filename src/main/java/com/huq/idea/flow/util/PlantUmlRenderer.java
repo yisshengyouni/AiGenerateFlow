@@ -1,5 +1,6 @@
 package com.huq.idea.flow.util;
 
+import com.huq.idea.config.IdeaSettings;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.util.io.FileUtil;
 
@@ -22,9 +23,6 @@ import java.nio.file.Files;
  */
 public class PlantUmlRenderer {
     private static final Logger LOG = Logger.getInstance(PlantUmlRenderer.class);
-
-    // 本地PlantUML安装路径
-    private static final String PLANTUML_PATH = "/usr/local/Cellar/plantuml/1.2024.5/libexec/plantuml.jar";
 
     // 临时文件目录
     private static final String TEMP_DIR = System.getProperty("java.io.tmpdir");
@@ -151,7 +149,7 @@ public class PlantUmlRenderer {
                     "java",
                     "-Djava.awt.headless=true ",
                     "-jar",
-                    PLANTUML_PATH,
+                    IdeaSettings.getInstance().getState().getPlantumlPathVal(),
                     "-tpng",
                     pumlFile.getAbsolutePath()
             );
@@ -230,7 +228,7 @@ public class PlantUmlRenderer {
             ProcessBuilder processBuilder = new ProcessBuilder(
                     "java",
                     "-jar",
-                    PLANTUML_PATH,
+                    IdeaSettings.getInstance().getState().getPlantumlPathVal(),
                     "-tsvg",
                     pumlFile.getAbsolutePath()
             );

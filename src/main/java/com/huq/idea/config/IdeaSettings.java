@@ -17,6 +17,7 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
 
     private State state = new State();
 
+
     public static final String DEFAULT_BUILD_METHOD_PROMPT = "引导提示词：\n" +
             "创建一个 `methodName` 方法，并根据每个属性的注释和名称，填充符合实际业务场景的示例值。确保所有属性都被赋值。\n" +
             "输出结果中只保留 `methodName` 方法的代码 。\n";
@@ -133,11 +134,20 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
     }
 
     public static class State {
+        private String plantumlPathVal;
         private String apiKey;
         private String buildMethodPrompt = DEFAULT_BUILD_METHOD_PROMPT;
         private String buildFlowPrompt = DEFAULT_BUILD_FLOW_PROMPT;
         private String buildFlowJsonPrompt = DEFAULT_BUILD_FLOW_JSON_PROMPT;
         private String umlSequencePrompt = DEFAULT_UML_SEQUENCE_PROMPT;
+
+        public String getPlantumlPathVal() {
+            return this.plantumlPathVal;
+        }
+
+        public void setPlantumlPathVal(String plantumlPathVal) {
+            this.plantumlPathVal = plantumlPathVal;
+        }
 
         public String getBuildMethodPrompt() {
             return this.buildMethodPrompt;

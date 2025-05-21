@@ -206,6 +206,20 @@ public class FlowDiagramAction extends AnAction implements DumbAware {
                 generateButton.setText("生成流程");
                 return;
             }
+            if (IdeaSettings.getInstance().getState().getPlantumlPathVal() == null ||
+                    IdeaSettings.getInstance().getState().getPlantumlPathVal().trim().isEmpty()) {
+                LOG.info("PlantUML安装路径未配置，无法渲染流程图");
+                Notifications.Bus.notify(new Notification(
+                        "com.yt.huq.idea",
+                        "PlantUML路径缺失",
+                        "PlantUML路径未配置。请在设置 > UmlFlowAiConfigurable 中设置",
+                        NotificationType.ERROR),
+                        project);
+                // 重新启用按钮
+                generateButton.setEnabled(true);
+                generateButton.setText("生成流程");
+                return;
+            }
 
             // 在后台任务中执行AI调用
             new Task.Backgroundable(project, "生成流程图", true, PerformInBackgroundOption.ALWAYS_BACKGROUND) {

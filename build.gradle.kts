@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.huq.idea"
-version = "1.0"
+version = "1.1"
 
 repositories {
   maven("https://maven.aliyun.com/repository/public")
@@ -48,7 +48,7 @@ tasks {
 
   patchPluginXml {
     sinceBuild.set("232")
-    untilBuild.set("242.*")
+//    untilBuild.set("242.*")
   }
 
   signPlugin {
