@@ -6,7 +6,8 @@ plugins {
 }
 
 group = "com.huq.idea"
-version = "1.1"
+version = "1.2"
+
 
 repositories {
   maven("https://maven.aliyun.com/repository/public")
@@ -19,7 +20,6 @@ repositories {
 intellij {
   version.set("2023.2.6")
   type.set("IC") // Target IDE Platform
-
   plugins.set(listOf("com.intellij.java", "org.jetbrains.kotlin"))
 }
 
