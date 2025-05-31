@@ -1,6 +1,6 @@
 package com.huq.idea.flow.apidoc;
 
-import com.huq.idea.config.IdeaSettings;
+import com.huq.idea.flow.config.config.IdeaSettings;
 import com.huq.idea.flow.apidoc.service.UmlFlowService;
 import com.huq.idea.flow.model.CallStack;
 import com.huq.idea.flow.model.MethodDescription;

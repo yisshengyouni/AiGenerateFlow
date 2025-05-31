@@ -1,4 +1,4 @@
-package com.huq.idea.config;
+package com.huq.idea.flow.config.config;
 
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.PersistentStateComponent;

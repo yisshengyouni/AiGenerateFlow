@@ -1,6 +1,6 @@
 package com.huq.idea.flow.util;
 
-import com.huq.idea.config.IdeaSettings;
+import com.huq.idea.flow.config.config.IdeaSettings;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.util.io.FileUtil;
 

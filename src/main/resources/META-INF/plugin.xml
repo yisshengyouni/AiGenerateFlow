@@ -47,36 +47,17 @@
   <extensions defaultExtensionNs="com.intellij">
     <notificationGroup displayType="BALLOON" id="com.yt.huq.idea" />
     <applicationConfigurable parentId="tools"
-                             instance="com.huq.idea.config.IdeaConfigurable"
+                             instance="com.huq.idea.flow.config.config.IdeaConfigurable"
                              id="com.yt.huq.idea.config.IdeaSettings"
                              displayName="UmlFlowAiConfigurable"
     />
-    <applicationService serviceImplementation="com.huq.idea.config.IdeaSettings" />
-      <toolWindow id="UmlFlowDiagram" anchor="bottom"
+    <applicationService serviceImplementation="com.huq.idea.flow.config.config.IdeaSettings" />
+      <toolWindow id="UmlFlowDiagram" anchor="bottom" icon="/icons/pluginIcon_13.png"
                   factoryClass="com.huq.idea.flow.apidoc.window.UmlFlowToolWindow" canCloseContents="true"/>
     <projectService serviceImplementation="com.huq.idea.flow.apidoc.service.UmlFlowServiceImpl" serviceInterface="com.huq.idea.flow.apidoc.service.UmlFlowService"/>
 
   </extensions>
   <actions>
-    <!--<action id="com.yt.huq.idea.flow" class="com.huq.idea.flow.GenerateFlowAction" text="GenerateFlow"
-            description="Ai generate flow diagram">
-      <add-to-group group-id="GenerateGroup" anchor="last"/>
-    </action>
-    <action id="com.yt.huq.idea.sequence" class="com.huq.idea.flow.apidoc.MethodChainAction" text="sequenceDiagram" description="sequenceDiagram">
-      <add-to-group group-id="GenerateGroup" anchor="last"/>
-    </action>
-    <action id="com.yt.huq.idea.build.object" class="com.huq.idea.build.BuildObjectAction" text="BuildObject"
-            description="Builder object method">
-      <add-to-group group-id="GenerateGroup" anchor="last"/>
-    </action>
-    <action id="com.yt.huq.idea.sequence.deepseek" class="com.huq.idea.flow.apidoc.MethodChainDeepSeekAction"
-            text="Generate UML Sequence Diagram" description="Generate UML sequence diagram using DeepSeek API">
-      <add-to-group group-id="GenerateGroup" anchor="last"/>
-    </action>
-    <action id="com.yt.huq.idea.sequence.enhanced" class="com.huq.idea.flow.apidoc.EnhancedSequenceDiagramAction"
-            text="Enhanced UML Sequence Diagram" description="Generate enhanced UML sequence diagram with improved method chain analysis">
-      <add-to-group group-id="GenerateGroup" anchor="last"/>
-    </action>-->
     <action id="com.yt.huq.idea.flow.diagram" class="com.huq.idea.flow.apidoc.FlowDiagramAction"
             text="Generate UML Flow Diagram" description="Generate UML flow diagram from method code using AI">
       <add-to-group group-id="GenerateGroup" anchor="last"/>

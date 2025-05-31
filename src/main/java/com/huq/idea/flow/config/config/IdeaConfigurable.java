@@ -1,4 +1,4 @@
-package com.huq.idea.config;
+package com.huq.idea.flow.config.config;
 
 import com.intellij.openapi.options.Configurable;
 import com.intellij.openapi.util.NlsContexts;
@@ -39,8 +39,6 @@ public class IdeaConfigurable implements Configurable {
         IdeaSettings.State state = IdeaSettings.getInstance().getState();
         state.setApiKey(settingsComponent.getApiKey());
         state.setBuildFlowPrompt(settingsComponent.getBuildFlowPrompt());
-        state.setBuildMethodPrompt(settingsComponent.getBuildMethodPrompt());
-        state.setUmlSequencePrompt(settingsComponent.getUmlSequencePrompt());
         state.setPlantumlPathVal(settingsComponent.getPlantumlPathValue());
     }
 }

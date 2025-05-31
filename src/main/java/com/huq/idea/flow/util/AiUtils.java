@@ -2,7 +2,7 @@ package com.huq.idea.flow.util;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.huq.idea.config.IdeaSettings;
+import com.huq.idea.flow.config.config.IdeaSettings;
 import com.intellij.openapi.diagnostic.Logger;
 import okhttp3.ConnectionPool;
 import okhttp3.MediaType;
