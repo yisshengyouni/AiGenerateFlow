@@ -1,17 +1,28 @@
 package com.huq.idea.flow.apidoc;
 
+import com.huq.idea.flow.config.config.IdeaSettings;
 import com.huq.idea.flow.model.CallStack;
 import com.huq.idea.flow.model.MethodDescription;
 import com.huq.idea.flow.util.MyPsiUtil;
 import com.intellij.lang.java.JavaLanguage;
 import com.intellij.openapi.diagnostic.Logger;
-import com.intellij.psi.*;
+import com.intellij.psi.JavaRecursiveElementVisitor;
+import com.intellij.psi.PsiClass;
+import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiExpression;
+import com.intellij.psi.PsiMethod;
+import com.intellij.psi.PsiMethodCallExpression;
+import com.intellij.psi.PsiStatement;
 import com.intellij.psi.javadoc.PsiDocComment;
 import com.intellij.psi.search.searches.DefinitionsScopedSearch;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.util.Query;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -208,26 +219,34 @@ public class EnhancedMethodChainVisitor extends JavaRecursiveElementVisitor {
             if (className == null) {
                 return;
             }
-            
-            // Filter methods based on class name patterns
-            // Focus on service, implementation, adapter, and API classes
-            boolean isRelevantClass = className.endsWith("Impl") || 
-                                     className.contains("Service") || 
-                                     className.contains("Adapter") || 
-                                     className.contains("Api") ||
-                                     className.contains("Repository") ||
-                                     className.contains("Manager") ||
-                                     className.contains("Controller");
-                                     
-            boolean isUtilityClass = className.endsWith("Util") || 
-                                    className.endsWith("Utils") ||
-                                    className.contains("Helper");
-            
-            if (isRelevantClass && !isUtilityClass) {
+            // Get configuration from settings
+            IdeaSettings.State settings = IdeaSettings.getInstance().getState();
+
+            // Check if class matches any relevant pattern
+            boolean isRelevantClass = settings.getRelevantClassPatterns().stream()
+                    .anyMatch(pattern -> matchesWildcardPattern(className, pattern));
+
+            // Check if class matches any excluded pattern
+            boolean isExcludedClass = settings.getExcludedClassPatterns().stream()
+                    .anyMatch(pattern -> matchesWildcardPattern(className, pattern));
+            if (isRelevantClass && !isExcludedClass) {
                 // Process the method call
                 processMethodCall(expression, calledMethod);
             }
         }
+    }
+
+    private boolean matchesWildcardPattern(String str, String wildcardPattern) {
+        if (str == null || wildcardPattern == null) {
+            return false;
+        }
+
+        // Convert wildcard pattern to regex pattern
+        String regexPattern = wildcardPattern
+                .replace(".", "\\.")  // Escape dots
+                .replace("*", ".*");  // Convert * to .*
+
+        return str.matches(regexPattern);
     }
 
     /**

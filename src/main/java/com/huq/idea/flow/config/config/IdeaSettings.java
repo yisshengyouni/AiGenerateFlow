@@ -7,6 +7,9 @@ import com.intellij.openapi.components.Storage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * @author huqiang
  * @since 2024/8/1 19:27
@@ -140,6 +143,30 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         private String buildFlowPrompt = DEFAULT_BUILD_FLOW_PROMPT;
         private String buildFlowJsonPrompt = DEFAULT_BUILD_FLOW_JSON_PROMPT;
         private String umlSequencePrompt = DEFAULT_UML_SEQUENCE_PROMPT;
+        private List<String> relevantClassPatterns = Arrays.asList(
+                "*Impl", "*Service", "*Adapter", "*Api", "*Repository",
+                "*Mapper", "*Manager", "*Controller"
+        );
+
+        private List<String> excludedClassPatterns = Arrays.asList(
+                "*Util", "*Utils", "*Helper"
+        );
+
+        public List<String> getExcludedClassPatterns() {
+            return this.excludedClassPatterns;
+        }
+
+        public void setExcludedClassPatterns(List<String> excludedClassPatterns) {
+            this.excludedClassPatterns = excludedClassPatterns;
+        }
+
+        public List<String> getRelevantClassPatterns() {
+            return this.relevantClassPatterns;
+        }
+
+        public void setRelevantClassPatterns(List<String> relevantClassPatterns) {
+            this.relevantClassPatterns = relevantClassPatterns;
+        }
 
         public String getPlantumlPathVal() {
             return this.plantumlPathVal;
