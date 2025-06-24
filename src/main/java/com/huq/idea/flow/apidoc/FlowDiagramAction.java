@@ -184,6 +184,24 @@ public class FlowDiagramAction extends AnAction implements DumbAware {
         // 底部按钮面板
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 
+        // AI模型选择下拉框
+        JLabel modelLabel = new JLabel("AI模型:");
+        JComboBox<AiUtils.AiProvider> modelComboBox = new JComboBox<>(AiUtils.AiProvider.values());
+        modelComboBox.setSelectedItem(AiUtils.AiProvider.DEEPSEEK); // 默认选择DeepSeek
+        modelComboBox.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof AiUtils.AiProvider) {
+                    AiUtils.AiProvider provider = (AiUtils.AiProvider) value;
+                    setText(provider.name() + " (" + provider.getDefaultModel() + ")");
+                }
+                return this;
+            }
+        });
+        buttonPanel.add(modelLabel);
+        buttonPanel.add(modelComboBox);
+
         // 生成流程按钮
         JButton generateButton = new JButton("生成流程");
         generateButton.addActionListener(e -> {
@@ -198,7 +216,7 @@ public class FlowDiagramAction extends AnAction implements DumbAware {
                 Notifications.Bus.notify(new Notification(
                         "com.yt.huq.idea",
                         "API密钥缺失",
-                        "DeepSeek API密钥未配置。请在设置 > UmlFlowAiConfigurable 中设置",
+                        "AI API密钥未配置。请在设置 > UmlFlowAiConfigurable 中设置",
                         NotificationType.ERROR),
                         project);
                 // 重新启用按钮
@@ -228,10 +246,21 @@ public class FlowDiagramAction extends AnAction implements DumbAware {
                     indicator.setText("正在生成PlantUML流程图...");
                     indicator.setIndeterminate(true);
 
+                    // 获取选择的AI模型
+                    AiUtils.AiProvider selectedProvider = (AiUtils.AiProvider) modelComboBox.getSelectedItem();
+                    
                     // 生成PlantUML流程图
                     String flowPromptTemplate = getFlowDiagramPrompt();
                     String flowPrompt = String.format(flowPromptTemplate, collectedCode);
-                    String flowDiagram = AiUtils.okRequest(flowPrompt);
+                    
+                    // 使用选择的AI模型调用
+                    AiUtils.AiConfig config = new AiUtils.AiConfig(selectedProvider, apiKey)
+                            .setSystemMessage("你是一个专业的PlantUML流程图生成专家，擅长分析Java代码并生成高质量的流程图。")
+                            .setTemperature(0.7)
+                            .setMaxTokens(8000);
+                    
+                    AiUtils.AiResponse response = AiUtils.callAi(flowPrompt, config);
+                    String flowDiagram = response.isSuccess() ? response.getContent() : null;
 
 
                     if (flowDiagram != null && !flowDiagram.isEmpty()) {
@@ -259,10 +288,15 @@ public class FlowDiagramAction extends AnAction implements DumbAware {
                         });
                     } else {
                         SwingUtilities.invokeLater(() -> {
+                            String errorMsg = "生成流程图失败，请检查API设置和网络连接";
+                            if (response != null && !response.isSuccess() && response.getErrorMessage() != null) {
+                                errorMsg = "生成流程图失败: " + response.getErrorMessage();
+                            }
+                            
                             Notifications.Bus.notify(new Notification(
                                     "com.yt.huq.idea",
                                     "流程图生成",
-                                    "生成流程图失败，请检查API设置和网络连接",
+                                    errorMsg,
                                     NotificationType.ERROR),
                                     project);
 
