@@ -55,7 +55,7 @@ public class AiUtils {
         private String model;
         private double temperature = 1.0;
         private int maxTokens = 8000;
-        private String systemMessage = "你是一个编程开发助手，擅长处理各类开发过程中的问题。";
+        private String systemMessage = "你是一个专业的PlantUML流程图生成专家，你精通PlantUML语法，精通UML类图、顺序图、组件图、用例图、状态图等各种UML图的表示。";
 
         public AiConfig(AiProvider provider, String apiKey) {
             this.provider = provider;
@@ -118,6 +118,61 @@ public class AiUtils {
         return client;
     }
 
+    /**
+     * 根据AI提供商自动获取API密钥并创建配置
+     * @param provider AI提供商
+     * @return AiConfig配置对象，如果未配置API密钥则返回null
+     */
+    public static AiConfig createConfigWithApiKey(AiProvider provider) {
+        IdeaSettings.State state = IdeaSettings.getInstance().getState();
+        String apiKey = state.getAiApiKey(provider.name());
+        
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            log.warn("API key not configured for provider: " + provider.name());
+            return null;
+        }
+        
+        return new AiConfig(provider, apiKey);
+    }
+    
+    /**
+     * 便捷方法：使用指定提供商调用AI（自动获取API密钥）
+     * @param prompt 提示词
+     * @param provider AI提供商
+     * @return AI响应结果
+     */
+    public static AiResponse callAi(String prompt, AiProvider provider) {
+        AiConfig config = createConfigWithApiKey(provider);
+        if (config == null) {
+            return new AiResponse(false, null, 
+                "API key not configured for " + provider.name() + ". Please configure it in Settings.", 
+                0, null);
+        }
+        return callAi(prompt, config);
+    }
+    
+    /**
+     * 获取所有已配置API密钥的AI提供商列表
+     * @return 可用的AI提供商列表
+     */
+    public static java.util.List<AiProvider> getAvailableProviders() {
+        IdeaSettings.State state = IdeaSettings.getInstance().getState();
+        java.util.List<AiProvider> availableProviders = new java.util.ArrayList<>();
+        
+        for (AiProvider provider : AiProvider.values()) {
+            if (state.hasAiApiKey(provider.name())) {
+                availableProviders.add(provider);
+            }
+        }
+        
+        // 如果没有配置任何新的API密钥，但有旧的apiKey配置，则默认添加DeepSeek
+        if (availableProviders.isEmpty() && state.getApiKey() != null && !state.getApiKey().trim().isEmpty()) {
+            availableProviders.add(AiProvider.DEEPSEEK);
+        }
+        
+        return availableProviders;
+    }
+    
     /**
      * 统一的AI调用接口
      */
@@ -374,12 +429,32 @@ public class AiUtils {
                 jsonObject.has("usage") ? jsonObject.get("usage") : null);
     }
 
-    // 便捷方法，保持向后兼容
+    /**
+     * 便捷方法，保持向后兼容
+     * 优先使用新的多模型配置，如果没有配置则回退到旧的单一API密钥
+     * @deprecated 建议使用 callAi(String prompt, AiProvider provider) 方法
+     */
+    @Deprecated
     public static String okRequest(String prompt) {
+        // 优先尝试使用新的多模型配置
+        java.util.List<AiProvider> availableProviders = getAvailableProviders();
+        if (!availableProviders.isEmpty()) {
+            // 使用第一个可用的提供商
+            AiProvider provider = availableProviders.get(0);
+            AiResponse response = callAi(prompt, provider);
+            return response.isSuccess() ? response.getContent() : null;
+        }
+        
+        // 回退到旧的单一API密钥配置（仅用于向后兼容）
         String apiKey = IdeaSettings.getInstance().getState().getApiKey();
-        AiConfig config = new AiConfig(AiProvider.DEEPSEEK, apiKey);
-        AiResponse response = callAi(prompt, config);
-        return response.isSuccess() ? response.getContent() : null;
+        if (apiKey != null && !apiKey.trim().isEmpty()) {
+            AiConfig config = new AiConfig(AiProvider.DEEPSEEK, apiKey);
+            AiResponse response = callAi(prompt, config);
+            return response.isSuccess() ? response.getContent() : null;
+        }
+        
+        log.warn("No API key configured for any AI provider");
+        return null;
     }
 
     // 使用示例的静态方法

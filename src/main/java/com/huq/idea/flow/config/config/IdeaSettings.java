@@ -8,7 +8,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author huqiang
@@ -138,7 +140,11 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
 
     public static class State {
         private String plantumlPathVal;
+        // 兼容旧版本的单一apiKey配置
+        @Deprecated
         private String apiKey;
+        // 多AI模型API密钥配置
+        private Map<String, String> aiApiKeys = new HashMap<>();
         private String buildMethodPrompt = DEFAULT_BUILD_METHOD_PROMPT;
         private String buildFlowPrompt = DEFAULT_BUILD_FLOW_PROMPT;
         private String buildFlowJsonPrompt = DEFAULT_BUILD_FLOW_JSON_PROMPT;
@@ -208,12 +214,80 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
             this.umlSequencePrompt = umlSequencePrompt;
         }
 
+        /**
+         * 获取API密钥（兼容旧版本）
+         * @deprecated 请使用 getAiApiKey(String provider) 方法
+         */
+        @Deprecated
         public String getApiKey() {
             return this.apiKey;
         }
 
+        /**
+         * 设置API密钥（兼容旧版本）
+         * @deprecated 请使用 setAiApiKey(String provider, String apiKey) 方法
+         */
+        @Deprecated
         public void setApiKey(String apiKey) {
             this.apiKey = apiKey;
+        }
+
+        /**
+         * 获取指定AI提供商的API密钥
+         * @param provider AI提供商名称（如：DEEPSEEK, OPENAI, ANTHROPIC等）
+         * @return API密钥，如果未配置则返回null
+         */
+        public String getAiApiKey(String provider) {
+            if (provider == null) {
+                return null;
+            }
+            String key = aiApiKeys.get(provider.toUpperCase());
+            // 向后兼容：如果新配置为空且是默认提供商，尝试使用旧的apiKey
+            if (key == null && "DEEPSEEK".equals(provider.toUpperCase()) && apiKey != null) {
+                return apiKey;
+            }
+            return key;
+        }
+
+        /**
+         * 设置指定AI提供商的API密钥
+         * @param provider AI提供商名称
+         * @param apiKey API密钥
+         */
+        public void setAiApiKey(String provider, String apiKey) {
+            if (provider != null) {
+                if (apiKey == null || apiKey.trim().isEmpty()) {
+                    aiApiKeys.remove(provider.toUpperCase());
+                } else {
+                    aiApiKeys.put(provider.toUpperCase(), apiKey.trim());
+                }
+            }
+        }
+
+        /**
+         * 获取所有AI提供商的API密钥配置
+         * @return API密钥配置Map
+         */
+        public Map<String, String> getAiApiKeys() {
+            return new HashMap<>(aiApiKeys);
+        }
+
+        /**
+         * 设置所有AI提供商的API密钥配置
+         * @param aiApiKeys API密钥配置Map
+         */
+        public void setAiApiKeys(Map<String, String> aiApiKeys) {
+            this.aiApiKeys = aiApiKeys != null ? new HashMap<>(aiApiKeys) : new HashMap<>();
+        }
+
+        /**
+         * 检查指定AI提供商是否已配置API密钥
+         * @param provider AI提供商名称
+         * @return 是否已配置
+         */
+        public boolean hasAiApiKey(String provider) {
+            String key = getAiApiKey(provider);
+            return key != null && !key.trim().isEmpty();
         }
     }
 }

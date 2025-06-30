@@ -1,13 +1,10 @@
 package com.huq.idea.flow.apidoc;
 
-import com.huq.idea.flow.config.config.IdeaSettings;
 import com.huq.idea.flow.apidoc.service.UmlFlowService;
+import com.huq.idea.flow.config.config.IdeaSettings;
 import com.huq.idea.flow.model.CallStack;
 import com.huq.idea.flow.model.MethodDescription;
-import com.huq.idea.flow.ui.JGraphXPanel;
 import com.huq.idea.flow.util.AiUtils;
-import com.huq.idea.flow.util.JGraphTRenderer;
-import com.huq.idea.flow.util.JGraphXRenderer;
 import com.huq.idea.flow.util.MethodUtils;
 import com.huq.idea.flow.util.PlantUmlRenderer;
 import com.intellij.notification.Notification;
@@ -28,7 +25,6 @@ import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiJavaFile;
 import com.intellij.psi.PsiMethod;
-import com.mxgraph.swing.mxGraphComponent;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -124,14 +120,6 @@ public class FlowDiagramAction extends AnAction implements DumbAware {
         JPanel plantUmlTab = createInitialPlantUmlTab(project, frame, collectedCode);
         tabbedPane.addTab("PlantUML视图", plantUmlTab);
 
-        // 创建JGraphX选项卡（如果有CallStack数据）
-        /*if (callStack != null) {
-            JPanel jgraphxTab = createJGraphXTab(callStack);
-            tabbedPane.addTab("JGraphX视图", jgraphxTab);
-
-            JPanel jGraphTTab = createJGraphTTab(project, collectedCode);
-            tabbedPane.addTab("JGraphT视图", jGraphTTab);
-        }*/
 
         // 底部面板
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -184,17 +172,22 @@ public class FlowDiagramAction extends AnAction implements DumbAware {
         // 底部按钮面板
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 
-        // AI模型选择下拉框
+        // AI模型选择下拉框（只显示已配置API密钥的模型）
         JLabel modelLabel = new JLabel("AI模型:");
-        JComboBox<AiUtils.AiProvider> modelComboBox = new JComboBox<>(AiUtils.AiProvider.values());
-        modelComboBox.setSelectedItem(AiUtils.AiProvider.DEEPSEEK); // 默认选择DeepSeek
+        java.util.List<AiUtils.AiProvider> availableProviders = AiUtils.getAvailableProviders();
+        JComboBox<AiUtils.AiProvider> modelComboBox = new JComboBox<>(availableProviders.toArray(new AiUtils.AiProvider[0]));
+        
+        // 设置默认选择
+        if (!availableProviders.isEmpty()) {
+            modelComboBox.setSelectedItem(availableProviders.get(0));
+        }
         modelComboBox.setRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                 if (value instanceof AiUtils.AiProvider) {
                     AiUtils.AiProvider provider = (AiUtils.AiProvider) value;
-                    setText(provider.name() + " (" + provider.getDefaultModel() + ")");
+                    setText(getProviderDisplayName(provider) + " (" + provider.getDefaultModel() + ")");
                 }
                 return this;
             }
@@ -209,14 +202,14 @@ public class FlowDiagramAction extends AnAction implements DumbAware {
             generateButton.setEnabled(false);
             generateButton.setText("生成中...");
 
-            // 检查API密钥
-            String apiKey = IdeaSettings.getInstance().getState().getApiKey();
-            if (apiKey == null || apiKey.trim().isEmpty()) {
-                LOG.info("API key not configured, skipping DeepSeek API call");
+            // 获取选择的AI提供商
+            AiUtils.AiProvider selectedProvider = (AiUtils.AiProvider) modelComboBox.getSelectedItem();
+            if (selectedProvider == null) {
+                LOG.info("No AI provider selected or available");
                 Notifications.Bus.notify(new Notification(
                         "com.yt.huq.idea",
-                        "API密钥缺失",
-                        "AI API密钥未配置。请在设置 > UmlFlowAiConfigurable 中设置",
+                        "无可用AI模型",
+                        "未选择AI模型或没有可用的AI模型。请在设置 > UmlFlowAiConfigurable 中配置至少一个AI模型的API密钥",
                         NotificationType.ERROR),
                         project);
                 // 重新启用按钮
@@ -246,18 +239,28 @@ public class FlowDiagramAction extends AnAction implements DumbAware {
                     indicator.setText("正在生成PlantUML流程图...");
                     indicator.setIndeterminate(true);
 
-                    // 获取选择的AI模型
-                    AiUtils.AiProvider selectedProvider = (AiUtils.AiProvider) modelComboBox.getSelectedItem();
-                    
                     // 生成PlantUML流程图
                     String flowPromptTemplate = getFlowDiagramPrompt();
                     String flowPrompt = String.format(flowPromptTemplate, collectedCode);
                     
-                    // 使用选择的AI模型调用
-                    AiUtils.AiConfig config = new AiUtils.AiConfig(selectedProvider, apiKey)
-                            .setSystemMessage("你是一个专业的PlantUML流程图生成专家，擅长分析Java代码并生成高质量的流程图。")
-                            .setTemperature(0.7)
-                            .setMaxTokens(8000);
+                    // 使用选择的AI模型调用（自动获取API密钥）
+                    AiUtils.AiConfig config = AiUtils.createConfigWithApiKey(selectedProvider);
+                    if (config == null) {
+                        SwingUtilities.invokeLater(() -> {
+                            generateButton.setEnabled(true);
+                            Notifications.Bus.notify(new Notification(
+                                "com.yt.huq.idea",
+                                "API密钥未配置",
+                                "请在设置中为 " + getProviderDisplayName(selectedProvider) + " 配置API密钥",
+                                NotificationType.WARNING),
+                                project);
+                        });
+                        return;
+                    }
+                    
+                    config.setSystemMessage("你是一个专业的PlantUML流程图生成专家，擅长分析Java代码并生成高质量的流程图。")
+                          .setTemperature(0.7)
+                          .setMaxTokens(8000);
                     
                     AiUtils.AiResponse response = AiUtils.callAi(flowPrompt, config);
                     String flowDiagram = response.isSuccess() ? response.getContent() : null;
@@ -436,396 +439,6 @@ public class FlowDiagramAction extends AnAction implements DumbAware {
     }
 
 
-
-    /**
-     * 创建JGraphX选项卡
-     */
-    private JPanel createJGraphXTab(CallStack callStack) {
-        JPanel panel = new JPanel(new BorderLayout());
-
-        // 将CallStack转换为JSON格式
-        String callStackJson = convertCallStackToJson(callStack);
-
-        // 创建一个分割面板，左侧显示CallStack数据，右侧显示图形
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        splitPane.setDividerLocation(500);
-        splitPane.setResizeWeight(0.5);
-
-        // 左侧CallStack数据面板
-        JPanel jsonPanel = new JPanel(new BorderLayout());
-        JTextArea textArea = new JTextArea();
-        textArea.setEditable(false); // CallStack数据不可编辑
-        textArea.setText(callStackJson);
-        textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
-        jsonPanel.add(new JScrollPane(textArea), BorderLayout.CENTER);
-
-        // 右侧图形面板
-        JPanel graphPanel = new JPanel(new BorderLayout());
-        JComponent graphComponent = JGraphXRenderer.createFlowDiagramComponent(callStack);
-
-        // 如果是mxGraphComponent，则创建增强的JGraphXPanel
-        if (graphComponent instanceof mxGraphComponent) {
-            graphPanel.add(new JGraphXPanel((mxGraphComponent) graphComponent), BorderLayout.CENTER);
-        } else {
-            graphPanel.add(graphComponent, BorderLayout.CENTER);
-        }
-
-        // 添加到分割面板
-        splitPane.setLeftComponent(jsonPanel);
-        splitPane.setRightComponent(graphPanel);
-
-        // 底部按钮面板
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-
-        // 复制按钮
-        JButton copyButton = new JButton("复制到剪贴板");
-        copyButton.addActionListener(e -> {
-            copyToClipboard(textArea.getText());
-            Notifications.Bus.notify(new Notification(
-                    "com.yt.huq.idea",
-                    "CallStack数据",
-                    "CallStack数据已复制到剪贴板",
-                    NotificationType.INFORMATION),
-                    currentProject);
-        });
-        buttonPanel.add(copyButton);
-
-        panel.add(splitPane, BorderLayout.CENTER);
-        panel.add(buttonPanel, BorderLayout.SOUTH);
-
-        return panel;
-    }
-
-    /**
-     * 将CallStack转换为JSON格式
-     */
-    private String convertCallStackToJson(CallStack callStack) {
-        StringBuilder json = new StringBuilder();
-        json.append("{\n");
-        json.append("  \"callStack\": {\n");
-        appendCallStackJson(json, callStack, 4);
-        json.append("  }\n");
-        json.append("}\n");
-        return json.toString();
-    }
-
-    /**
-     * 递归将CallStack转换为JSON格式
-     */
-    private void appendCallStackJson(StringBuilder json, CallStack callStack, int indent) {
-        String indentStr = " ".repeat(indent);
-
-        if (callStack == null || callStack.getMethodDescription() == null) {
-            json.append(indentStr).append("null");
-            return;
-        }
-
-        MethodDescription methodDesc = callStack.getMethodDescription();
-
-        json.append(indentStr).append("\"methodDescription\": {\n");
-        json.append(indentStr).append("  \"className\": \"").append(methodDesc.getClassName()).append("\",\n");
-        json.append(indentStr).append("  \"methodName\": \"").append(methodDesc.getName()).append("\",\n");
-        json.append(indentStr).append("  \"returnType\": \"").append(methodDesc.getReturnType()).append("\"\n");
-        json.append(indentStr).append("},\n");
-
-        json.append(indentStr).append("\"children\": [\n");
-
-        for (int i = 0; i < callStack.getChildren().size(); i++) {
-            CallStack child = callStack.getChildren().get(i);
-            json.append(indentStr).append("  {\n");
-            appendCallStackJson(json, child, indent + 4);
-            json.append(indentStr).append("  }");
-
-            if (i < callStack.getChildren().size() - 1) {
-                json.append(",");
-            }
-
-            json.append("\n");
-        }
-
-        json.append(indentStr).append("]\n");
-    }
-
-    /**
-     * 创建JGraphT选项卡
-     */
-    private JPanel createJGraphTTab(Project project, String collectedCode) {
-        JPanel panel = new JPanel(new BorderLayout());
-
-        // 创建一个分割面板，左侧显示JSON数据，右侧显示图形
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        splitPane.setDividerLocation(500);
-        splitPane.setResizeWeight(0.5);
-
-        // 左侧JSON数据面板
-        JPanel jsonPanel = new JPanel(new BorderLayout());
-        JTextArea textArea = new JTextArea();
-        textArea.setEditable(true);
-        textArea.setText(collectedCode);
-        textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
-        jsonPanel.add(new JScrollPane(textArea), BorderLayout.CENTER);
-
-        // 右侧图形面板（初始为空白）
-        JPanel diagramPanel = new JPanel(new BorderLayout());
-        JLabel waitingLabel = new JLabel("点击\"生成流程\"按钮生成流程图", SwingConstants.CENTER);
-        waitingLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
-        diagramPanel.add(waitingLabel, BorderLayout.CENTER);
-
-        // 添加到分割面板
-        splitPane.setLeftComponent(jsonPanel);
-        splitPane.setRightComponent(diagramPanel);
-
-        // 底部按钮面板
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-
-        JButton generateButton = new JButton("生成流程");
-        generateButton.addActionListener(e -> {
-            // 禁用按钮，防止重复点击
-            generateButton.setEnabled(false);
-            generateButton.setText("生成中...");
-
-            // 检查API密钥
-            String apiKey = IdeaSettings.getInstance().getState().getApiKey();
-            if (apiKey == null || apiKey.trim().isEmpty()) {
-                LOG.info("API key not configured, skipping DeepSeek API call");
-                Notifications.Bus.notify(new Notification(
-                                "com.yt.huq.idea",
-                                "API密钥缺失",
-                                "DeepSeek API密钥未配置。请在设置 > UmlFlowAiConfigurable 中设置",
-                                NotificationType.ERROR),
-                        project);
-                // 重新启用按钮
-                generateButton.setEnabled(true);
-                generateButton.setText("生成流程");
-                return;
-            }
-
-            // 在后台任务中执行AI调用
-            new Task.Backgroundable(project, "生成流程图", true, PerformInBackgroundOption.ALWAYS_BACKGROUND) {
-                @Override
-                public void run(@NotNull ProgressIndicator indicator) {
-                    // 生成JSON流程图数据
-                    indicator.setText("正在生成JSON流程图数据...");
-                    String flowJsonPromptTemplate = getFlowJsonDiagramPrompt();
-                    String flowJsonPrompt = String.format(flowJsonPromptTemplate, collectedCode);
-                    String flowJsonData = AiUtils.okRequest(flowJsonPrompt);
-
-                    if (flowJsonData != null && !flowJsonData.isEmpty()) {
-                        // 更新UI
-                        String finalFlowJsonData = cleanupJsonResponse(flowJsonData);
-                        SwingUtilities.invokeLater(() -> {
-                            // 更新文本区域
-                            textArea.setText(flowJsonData);
-
-                            // 创建新的图形面板
-                            JPanel newGraphPanel = new JPanel(new BorderLayout());
-                            JComponent newGraphComponent = JGraphTRenderer.createFlowDiagramComponent(finalFlowJsonData, project);
-                            newGraphPanel.add(newGraphComponent, BorderLayout.CENTER);
-
-                            // 替换旧的图形面板
-                            splitPane.setRightComponent(newGraphPanel);
-
-                            // 重新启用按钮
-                            generateButton.setEnabled(true);
-                            generateButton.setText("重新生成");
-
-                            // 刷新UI
-                            splitPane.revalidate();
-                            splitPane.repaint();
-                            panel.revalidate();
-                            panel.repaint();
-                        });
-                    } else {
-                        SwingUtilities.invokeLater(() -> {
-                            Notifications.Bus.notify(new Notification(
-                                            "com.yt.huq.idea",
-                                            "流程图生成",
-                                            "生成流程图失败，请检查API设置和网络连接",
-                                            NotificationType.ERROR),
-                                    project);
-
-                            // 重新启用按钮
-                            generateButton.setEnabled(true);
-                            generateButton.setText("生成流程");
-                        });
-                    }
-                }
-            }.queue();
-        });
-        buttonPanel.add(generateButton);
-
-        // 复制按钮
-        JButton copyButton = new JButton("复制到剪贴板");
-        copyButton.addActionListener(e -> {
-            copyToClipboard(textArea.getText());
-            Notifications.Bus.notify(new Notification(
-                    "com.yt.huq.idea",
-                    "流程图JSON",
-                    "流程图JSON数据已复制到剪贴板",
-                    NotificationType.INFORMATION),
-                    project);
-        });
-        buttonPanel.add(copyButton);
-
-        // 保存JSON按钮
-        JButton saveJsonButton = new JButton("保存JSON");
-        saveJsonButton.addActionListener(e -> {
-            JFileChooser fileChooser = new JFileChooser();
-            fileChooser.setDialogTitle("保存流程图JSON");
-            fileChooser.setSelectedFile(new java.io.File("flow_diagram.json"));
-
-            int userSelection = fileChooser.showSaveDialog(null);
-            if (userSelection == JFileChooser.APPROVE_OPTION) {
-                java.io.File fileToSave = fileChooser.getSelectedFile();
-                try {
-                    java.io.FileWriter writer = new java.io.FileWriter(fileToSave);
-                    writer.write(textArea.getText());
-                    writer.close();
-                    Notifications.Bus.notify(new Notification(
-                            "com.yt.huq.idea",
-                            "流程图JSON",
-                            "JSON数据已保存到 " + fileToSave.getAbsolutePath(),
-                            NotificationType.INFORMATION),
-                            project);
-                } catch (Exception ex) {
-                    Notifications.Bus.notify(new Notification(
-                            "com.yt.huq.idea",
-                            "流程图JSON",
-                            "保存JSON数据失败: " + ex.getMessage(),
-                            NotificationType.ERROR),
-                            project);
-                }
-            }
-        });
-        buttonPanel.add(saveJsonButton);
-
-        // 刷新图像按钮
-        JButton refreshButton = new JButton("刷新图像");
-        refreshButton.addActionListener(e -> {
-            // 获取当前文本区域的内容
-            String updatedJsonData = textArea.getText();
-
-            // 创建新的图形面板
-            JPanel newGraphPanel = new JPanel(new BorderLayout());
-            JComponent newGraphComponent = JGraphTRenderer.createFlowDiagramComponent(updatedJsonData, project);
-            newGraphPanel.add(newGraphComponent, BorderLayout.CENTER);
-
-            // 替换旧的图形面板
-            splitPane.setRightComponent(newGraphPanel);
-            splitPane.revalidate();
-            splitPane.repaint();
-
-            panel.revalidate();
-            panel.repaint();
-        });
-        buttonPanel.add(refreshButton);
-
-        panel.add(splitPane, BorderLayout.CENTER);
-        panel.add(buttonPanel, BorderLayout.SOUTH);
-
-        return panel;
-    }
-
-    /**
-     * 从JSON数据创建JGraphX选项卡
-     */
-    private JPanel createJGraphXTabFromJson(Project project, String jsonData) {
-        JPanel panel = new JPanel(new BorderLayout());
-
-        // 创建一个分割面板，左侧显示JSON数据，右侧显示图形
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        splitPane.setDividerLocation(500);
-        splitPane.setResizeWeight(0.5);
-
-        // 左侧JSON数据面板
-        JPanel jsonPanel = new JPanel(new BorderLayout());
-        JTextArea textArea = new JTextArea();
-        textArea.setEditable(true);
-        textArea.setText(jsonData);
-        textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
-        jsonPanel.add(new JScrollPane(textArea), BorderLayout.CENTER);
-
-        // 右侧图形面板
-        JPanel graphPanel = new JPanel(new BorderLayout());
-        JComponent graphComponent = JGraphXRenderer.createFlowDiagramComponentFromJson(jsonData, project);
-        graphPanel.add(graphComponent, BorderLayout.CENTER);
-
-        // 添加到分割面板
-        splitPane.setLeftComponent(jsonPanel);
-        splitPane.setRightComponent(graphPanel);
-
-        // 底部按钮面板
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-
-        // 复制按钮
-        JButton copyButton = new JButton("复制到剪贴板");
-        copyButton.addActionListener(e -> {
-            copyToClipboard(textArea.getText());
-            Notifications.Bus.notify(new Notification(
-                    "com.yt.huq.idea",
-                    "流程图JSON",
-                    "流程图JSON数据已复制到剪贴板",
-                    NotificationType.INFORMATION),
-                    project);
-        });
-        buttonPanel.add(copyButton);
-
-        // 保存JSON按钮
-        JButton saveJsonButton = new JButton("保存JSON");
-        saveJsonButton.addActionListener(e -> {
-            JFileChooser fileChooser = new JFileChooser();
-            fileChooser.setDialogTitle("保存流程图JSON");
-            fileChooser.setSelectedFile(new java.io.File("flow_diagram.json"));
-
-            int userSelection = fileChooser.showSaveDialog(null);
-            if (userSelection == JFileChooser.APPROVE_OPTION) {
-                java.io.File fileToSave = fileChooser.getSelectedFile();
-                try {
-                    java.io.FileWriter writer = new java.io.FileWriter(fileToSave);
-                    writer.write(textArea.getText());
-                    writer.close();
-                    Notifications.Bus.notify(new Notification(
-                            "com.yt.huq.idea",
-                            "流程图JSON",
-                            "JSON数据已保存到 " + fileToSave.getAbsolutePath(),
-                            NotificationType.INFORMATION),
-                            project);
-                } catch (Exception ex) {
-                    Notifications.Bus.notify(new Notification(
-                            "com.yt.huq.idea",
-                            "流程图JSON",
-                            "保存JSON数据失败: " + ex.getMessage(),
-                            NotificationType.ERROR),
-                            project);
-                }
-            }
-        });
-        buttonPanel.add(saveJsonButton);
-
-        // 刷新图像按钮
-        JButton refreshButton = new JButton("刷新图像");
-        refreshButton.addActionListener(e -> {
-            // 获取当前文本区域的内容
-            String updatedJsonData = textArea.getText();
-
-            // 创建新的图形面板
-            JPanel newGraphPanel = new JPanel(new BorderLayout());
-            JComponent newGraphComponent = JGraphXRenderer.createFlowDiagramComponentFromJson(updatedJsonData, project);
-            newGraphPanel.add(newGraphComponent, BorderLayout.CENTER);
-
-            // 替换旧的图形面板
-            splitPane.setRightComponent(newGraphPanel);
-            splitPane.revalidate();
-            splitPane.repaint();
-        });
-        buttonPanel.add(refreshButton);
-
-        panel.add(splitPane, BorderLayout.CENTER);
-        panel.add(buttonPanel, BorderLayout.SOUTH);
-
-        return panel;
-    }
-
     /**
      * 复制文本到剪贴板
      */
@@ -867,24 +480,6 @@ public class FlowDiagramAction extends AnAction implements DumbAware {
         return umlResponse;
     }
 
-    private String cleanupJsonResponse(String jsonResponse) {
-        if (jsonResponse == null || jsonResponse.isEmpty()) {
-            return jsonResponse;
-        }
-        if (!jsonResponse.startsWith("{")) {
-            int startIndex = jsonResponse.indexOf("{");
-            if (startIndex >= 0) {
-                jsonResponse = jsonResponse.substring(startIndex);
-            }
-        }
-        if (!jsonResponse.endsWith("}")) {
-            if (jsonResponse.contains("}")) {
-                int endIndex = jsonResponse.lastIndexOf("}");
-                jsonResponse = jsonResponse.substring(0, endIndex + 1);
-            }
-        }
-        return jsonResponse;
-    }
 
     /**
      * 收集方法调用链中的所有代码
@@ -967,10 +562,18 @@ public class FlowDiagramAction extends AnAction implements DumbAware {
     }
 
     /**
-     * 获取JSON流程图提示词
+     * 获取AI提供商的显示名称
      */
-    private String getFlowJsonDiagramPrompt() {
-        // 从设置中获取JSON流程图提示词
-        return IdeaSettings.getInstance().getState().getBuildFlowJsonPrompt();
+    private String getProviderDisplayName(AiUtils.AiProvider provider) {
+        switch (provider) {
+            case DEEPSEEK: return "DeepSeek";
+            case OPENAI: return "OpenAI";
+            case ANTHROPIC: return "Anthropic (Claude)";
+            case MOONSHOT: return "月之暗面 (Moonshot)";
+            case BAIDU: return "百度文心一言";
+            case ALIBABA: return "阿里通义千问";
+            case ZHIPU: return "智谱AI (GLM)";
+            default: return provider.name();
+        }
     }
 }

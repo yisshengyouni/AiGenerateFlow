@@ -1,7 +1,7 @@
 package com.huq.idea.flow.apidoc;
 
-import com.huq.idea.flow.config.config.IdeaSettings;
 import com.huq.idea.flow.model.CallStack;
+import com.huq.idea.flow.util.AiUtils;
 import com.huq.idea.flow.util.MethodUtils;
 import com.huq.idea.flow.util.PlantUmlRenderer;
 import com.intellij.notification.Notification;
@@ -95,14 +95,14 @@ public class EnhancedSequenceDiagramAction extends AnAction {
                 String plantUmlCode = callStack.generateUml();
                 SwingUtilities.invokeLater(() -> showUmlDialog(project, plantUmlCode, currentMethod.getName() + " (Sequence Diagram)", false));
 
-                // Get API key from settings
-                String apiKey = IdeaSettings.getInstance().getState().getApiKey();
-                if (apiKey == null || apiKey.trim().isEmpty()) {
-                    LOG.info("API key not configured, skipping DeepSeek API call");
+                // 检查是否有可用的AI模型配置
+                java.util.List<AiUtils.AiProvider> availableProviders = AiUtils.getAvailableProviders();
+                if (availableProviders.isEmpty()) {
+                    LOG.info("No AI provider configured, skipping AI API call");
                     Notifications.Bus.notify(new Notification(
                             "com.yt.huq.idea",
-                            "API Key Missing",
-                            "DeepSeek API key is not configured. Please set it in Settings > UmlFlowAiConfigurable",
+                            "AI Configuration Missing",
+                            "No AI provider is configured. Please configure at least one AI provider in Settings > UmlFlowAiConfigurable",
                             NotificationType.ERROR),
                             project);
                     return;

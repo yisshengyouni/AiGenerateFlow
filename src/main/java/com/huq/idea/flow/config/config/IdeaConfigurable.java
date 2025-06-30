@@ -5,6 +5,7 @@ import com.intellij.openapi.util.NlsContexts;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
+import java.awt.BorderLayout;
 
 /**
  * @author huqiang
@@ -26,6 +27,8 @@ public class IdeaConfigurable implements Configurable {
             settingsComponent = new AiConfigurationComponent();
         }
         settingsComponent.init(IdeaSettings.getInstance().getState());
+        
+        // 直接返回新的主面板，已经包含了所有配置组件
         return settingsComponent.getjPanel();
     }
 
@@ -37,7 +40,9 @@ public class IdeaConfigurable implements Configurable {
     @Override
     public void apply() {
         IdeaSettings.State state = IdeaSettings.getInstance().getState();
-        state.setApiKey(settingsComponent.getApiKey());
+        // 保存多AI模型API密钥配置
+        state.setAiApiKeys(settingsComponent.getAiApiKeys());
+        
         state.setBuildFlowPrompt(settingsComponent.getBuildFlowPrompt());
         state.setPlantumlPathVal(settingsComponent.getPlantumlPathValue());
         state.setRelevantClassPatterns(settingsComponent.getRelevantPatterns());
