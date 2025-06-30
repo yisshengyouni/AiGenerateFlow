@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.huq.idea"
-version = "1.2.1"
+version = "1.2.2"
 
 
 repositories {
@@ -45,10 +45,11 @@ tasks {
   withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     kotlinOptions.jvmTarget = "17"
   }
-
   patchPluginXml {
+    // 设置插件兼容的IDE最小构建版本
     sinceBuild.set("232")
-//    untilBuild.set("242.*")
+    // 明确设置 untilBuild 为空，不限制最大支持版本
+    untilBuild.set("253.*")
   }
 
   signPlugin {
