@@ -8,7 +8,7 @@ import javax.swing.*;
  */
 public interface UmlFlowService {
 
-    String PLUGIN_NAME = "UmlFlowDiagram";
+    String PLUGIN_NAME = "FlowDiagram";
 
     void addFlow(JComponent jComponent);
 

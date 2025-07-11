@@ -117,12 +117,10 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
             "  ]\n" +
             "}\n\n" +
             "代码：\n%s";
-    public static final String DEFAULT_UML_SEQUENCE_PROMPT = "你是一位UML序列图专家。分析以下方法调用链，并生成一个详细的PlantUML序列图。\n" +
-            "图表应该展示所有方法调用，包括接口和实现。\n" +
-            "包含所有相关细节，如方法参数和返回类型。\n" +
-            "为每个重要步骤添加中文注释，解释其业务逻辑。\n" +
-            "只返回PlantUML代码，不要有其他内容。\n\n" +
-            "方法调用链：\n%s";
+    public static final String DEFAULT_UML_SEQUENCE_PROMPT = "你是一个UML时序图生成专家。请基于下面提供的Java方法调用链相关的代码，生成一个PlantUML格式的UML时序图。\\n\\n请遵循以下规则：\\n1. \n" +
+            "      严格使用PlantUML语法。\\n2. 以 `@startuml` 开始，以 `@enduml` 结束。\\n3. 将每个参与交互的类或组件识别为参与者(participant)。\\n4. 准确地表示方法调用和返回关系，使用 `->` 表示调用，使用 \n" +
+            "      `-->` 表示返回。\\n5. 如果代码中有循环或条件判断，请使用 `loop`、`alt`、`opt` 等UML片段来表示。\\n6. 在调用箭头上清晰地标出方法名和参数。\\n7. \n" +
+            "      不要包含与代码无关的注释或解释。\\n\\n下面是需要分析的代码：\\n%s";
 
     public static IdeaSettings getInstance() {
         return ApplicationManager.getApplication().getService(IdeaSettings.class);
