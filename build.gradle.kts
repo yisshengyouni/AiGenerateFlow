@@ -1,6 +1,6 @@
 plugins {
   id("java")
-  id("org.jetbrains.kotlin.jvm") version "1.9.24"
+  id("org.jetbrains.kotlin.jvm") version "2.2.0"
   id("org.jetbrains.intellij") version "1.17.3"
   id("org.jetbrains.changelog") version "1.3.1"
 }
@@ -18,9 +18,9 @@ repositories {
 // Configure Gradle IntelliJ Plugin
 // Read more: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html
 intellij {
-  version.set("2023.2.6")
+  localPath.set("C:\\Program Files\\JetBrains\\IntelliJ IDEA 2025.3.2")
   type.set("IC") // Target IDE Platform
-  plugins.set(listOf("com.intellij.java", "org.jetbrains.kotlin"))
+  plugins.set(listOf("com.intellij.java"))
 }
 
 dependencies {
@@ -43,7 +43,7 @@ tasks {
     targetCompatibility = "17"
   }
   withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions.jvmTarget = "17"
+    compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
   }
   patchPluginXml {
     // 设置插件兼容的IDE最小构建版本

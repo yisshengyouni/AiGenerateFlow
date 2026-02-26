@@ -148,8 +148,11 @@ public class PlantUmlRenderer {
             ProcessBuilder processBuilder = new ProcessBuilder(
                     "java",
                     "-Djava.awt.headless=true ",
+                    "-Dfile.encoding=UTF-8",        // 添加 JVM 编码设置
                     "-jar",
                     IdeaSettings.getInstance().getState().getPlantumlPathVal(),
+                    "-charset",                      // 添加 PlantUML 编码参数
+                    "UTF-8",
                     "-tpng",
                     pumlFile.getAbsolutePath()
             );
