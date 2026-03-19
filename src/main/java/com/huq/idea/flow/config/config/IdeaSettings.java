@@ -136,6 +136,55 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         this.state = state;
     }
 
+    public static class CustomAiProviderConfig {
+        private String name;
+        private String apiUrl;
+        private String apiKey;
+        private String models; // Comma separated list of models
+
+        public CustomAiProviderConfig() {
+        }
+
+        public CustomAiProviderConfig(String name, String apiUrl, String apiKey, String models) {
+            this.name = name;
+            this.apiUrl = apiUrl;
+            this.apiKey = apiKey;
+            this.models = models;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getApiUrl() {
+            return apiUrl;
+        }
+
+        public void setApiUrl(String apiUrl) {
+            this.apiUrl = apiUrl;
+        }
+
+        public String getApiKey() {
+            return apiKey;
+        }
+
+        public void setApiKey(String apiKey) {
+            this.apiKey = apiKey;
+        }
+
+        public String getModels() {
+            return models;
+        }
+
+        public void setModels(String models) {
+            this.models = models;
+        }
+    }
+
     public static class PromptConfig {
         private String name;
         private String prompt;
@@ -172,6 +221,8 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         private String apiKey;
         // 多AI模型API密钥配置
         private Map<String, String> aiApiKeys = new HashMap<>();
+        // 自定义 OpenAI 兼容模型配置
+        private List<CustomAiProviderConfig> customAiProviders;
         private String buildMethodPrompt = DEFAULT_BUILD_METHOD_PROMPT;
         private String buildFlowPrompt = DEFAULT_BUILD_FLOW_PROMPT;
         private List<PromptConfig> flowPrompts;
@@ -332,6 +383,50 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         public boolean hasAiApiKey(String provider) {
             String key = getAiApiKey(provider);
             return key != null && !key.trim().isEmpty();
+        }
+
+        public List<CustomAiProviderConfig> getCustomAiProviders() {
+            if (customAiProviders == null) {
+                customAiProviders = new java.util.ArrayList<>();
+
+                // Add default DeepSeek configuration if empty
+                if (aiApiKeys.containsKey("DEEPSEEK") || apiKey != null) {
+                    String dsKey = aiApiKeys.containsKey("DEEPSEEK") ? aiApiKeys.get("DEEPSEEK") : apiKey;
+                    if (dsKey != null && !dsKey.isEmpty()) {
+                        customAiProviders.add(new CustomAiProviderConfig(
+                                "DeepSeek",
+                                "https://api.deepseek.com/chat/completions",
+                                dsKey,
+                                "deepseek-coder,deepseek-chat"
+                        ));
+                    }
+                }
+                if (aiApiKeys.containsKey("OPENAI")) {
+                    String oaKey = aiApiKeys.get("OPENAI");
+                    if (oaKey != null && !oaKey.isEmpty()) {
+                        customAiProviders.add(new CustomAiProviderConfig(
+                                "OpenAI",
+                                "https://api.openai.com/v1/chat/completions",
+                                oaKey,
+                                "gpt-3.5-turbo,gpt-4"
+                        ));
+                    }
+                }
+
+                if (customAiProviders.isEmpty()) {
+                    customAiProviders.add(new CustomAiProviderConfig(
+                            "DeepSeek",
+                            "https://api.deepseek.com/chat/completions",
+                            "",
+                            "deepseek-coder,deepseek-chat"
+                    ));
+                }
+            }
+            return customAiProviders;
+        }
+
+        public void setCustomAiProviders(List<CustomAiProviderConfig> customAiProviders) {
+            this.customAiProviders = customAiProviders;
         }
     }
 }

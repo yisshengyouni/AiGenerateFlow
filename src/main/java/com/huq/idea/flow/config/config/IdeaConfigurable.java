@@ -40,9 +40,11 @@ public class IdeaConfigurable implements Configurable {
     @Override
     public void apply() {
         IdeaSettings.State state = IdeaSettings.getInstance().getState();
-        // 保存多AI模型API密钥配置
+        // 保存多AI模型API密钥配置 (弃用，但为了避免空指针可以清空或保留空Map)
         state.setAiApiKeys(settingsComponent.getAiApiKeys());
         
+        state.setCustomAiProviders(settingsComponent.getCustomAiProviders());
+
         state.setBuildFlowPrompt(settingsComponent.getBuildFlowPrompt());
         state.setFlowPrompts(settingsComponent.getFlowPrompts());
         state.setPlantumlPathVal(settingsComponent.getPlantumlPathValue());
