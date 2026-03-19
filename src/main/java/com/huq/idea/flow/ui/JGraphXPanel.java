@@ -76,18 +76,22 @@ public class JGraphXPanel extends JPanel {
         
         // 缩放按钮
         JButton zoomInButton = new JButton("放大");
+        zoomInButton.setToolTipText("放大 (Ctrl + 鼠标滚轮上)");
         zoomInButton.addActionListener(e -> zoomIn());
         toolBar.add(zoomInButton);
         
         JButton zoomOutButton = new JButton("缩小");
+        zoomOutButton.setToolTipText("缩小 (Ctrl + 鼠标滚轮下)");
         zoomOutButton.addActionListener(e -> zoomOut());
         toolBar.add(zoomOutButton);
         
         JButton zoomActualButton = new JButton("实际大小");
+        zoomActualButton.setToolTipText("实际大小");
         zoomActualButton.addActionListener(e -> zoomActual());
         toolBar.add(zoomActualButton);
         
         JButton zoomFitButton = new JButton("适应窗口");
+        zoomFitButton.setToolTipText("适应窗口");
         zoomFitButton.addActionListener(e -> zoomToFit());
         toolBar.add(zoomFitButton);
         

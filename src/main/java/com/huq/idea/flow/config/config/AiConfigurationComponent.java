@@ -101,6 +101,7 @@ public class AiConfigurationComponent {
         gbc.weightx = 1.0;
         plantumlPathVal = new JTextField(30);
         plantumlPathVal.setToolTipText("请输入PlantUML的安装路径");
+        plantumlLabel.setLabelFor(plantumlPathVal);
         generalConfigPanel.add(plantumlPathVal, gbc);
     }
     
@@ -159,6 +160,7 @@ public class AiConfigurationComponent {
             // 输入框
             JTextField textField = new JTextField(30);
             textField.setToolTipText("请输入" + displayName + "的API密钥");
+            label.setLabelFor(textField);
             aiApiKeyFields.put(provider.name(), textField);
             
             gbc.gridx = 1;
@@ -195,6 +197,7 @@ public class AiConfigurationComponent {
         flowPromptTextArea.setToolTipText("自定义AI生成流程图的提示词");
         flowPromptTextArea.setLineWrap(true);
         flowPromptTextArea.setWrapStyleWord(true);
+        promptLabel.setLabelFor(flowPromptTextArea);
         JScrollPane promptScrollPane = new JScrollPane(flowPromptTextArea);
         promptScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         promptConfigPanel.add(promptScrollPane, gbc);
@@ -226,6 +229,7 @@ public class AiConfigurationComponent {
         relevantPatternsArea.setToolTipText("匹配相关类的正则表达式模式，每行一个");
         relevantPatternsArea.setLineWrap(true);
         relevantPatternsArea.setWrapStyleWord(true);
+        relevantLabel.setLabelFor(relevantPatternsArea);
         JScrollPane relevantScrollPane = new JScrollPane(relevantPatternsArea);
         relevantScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         patternConfigPanel.add(relevantScrollPane, gbc);
@@ -245,6 +249,7 @@ public class AiConfigurationComponent {
         excludedPatternsArea.setToolTipText("排除类的正则表达式模式，每行一个");
         excludedPatternsArea.setLineWrap(true);
         excludedPatternsArea.setWrapStyleWord(true);
+        excludedLabel.setLabelFor(excludedPatternsArea);
         JScrollPane excludedScrollPane = new JScrollPane(excludedPatternsArea);
         excludedScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         patternConfigPanel.add(excludedScrollPane, gbc);
