@@ -22,6 +22,7 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.ui.ComboBox;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiJavaFile;
 import com.intellij.psi.PsiMethod;
@@ -172,14 +173,14 @@ public class FlowDiagramAction extends AnAction implements DumbAware {
         // 底部按钮面板
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 
-        // AI提供商选择下拉框
-        JLabel providerLabel = new JLabel("AI提供商:");
+        // AI 提供商选择下拉框
+        JLabel providerLabel = new JLabel("AI 提供商:");
         java.util.List<IdeaSettings.CustomAiProviderConfig> availableProviders = AiUtils.getCustomProviders();
-        JComboBox<IdeaSettings.CustomAiProviderConfig> providerComboBox = new JComboBox<>(availableProviders.toArray(new IdeaSettings.CustomAiProviderConfig[0]));
+        ComboBox<IdeaSettings.CustomAiProviderConfig> providerComboBox = new ComboBox<>(availableProviders.toArray(new IdeaSettings.CustomAiProviderConfig[0]));
 
         // 具体模型选择下拉框
         JLabel specificModelLabel = new JLabel("具体模型:");
-        JComboBox<String> specificModelComboBox = new JComboBox<>();
+        ComboBox<String> specificModelComboBox = new ComboBox<>();
 
         // 监听提供商改变时，更新可用模型列表
         providerComboBox.addActionListener(e -> {
@@ -222,7 +223,7 @@ public class FlowDiagramAction extends AnAction implements DumbAware {
         // 提示词选择下拉框
         JLabel promptLabel = new JLabel("提示词:");
         java.util.List<IdeaSettings.PromptConfig> prompts = IdeaSettings.getInstance().getState().getFlowPrompts();
-        JComboBox<IdeaSettings.PromptConfig> promptComboBox = new JComboBox<>(prompts.toArray(new IdeaSettings.PromptConfig[0]));
+        ComboBox<IdeaSettings.PromptConfig> promptComboBox = new ComboBox<>(prompts.toArray(new IdeaSettings.PromptConfig[0]));
 
         if (!prompts.isEmpty()) {
             promptComboBox.setSelectedIndex(0);

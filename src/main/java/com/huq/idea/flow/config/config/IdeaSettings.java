@@ -216,9 +216,6 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
 
     public static class State {
         private String plantumlPathVal;
-        // 兼容旧版本的单一apiKey配置
-        @Deprecated
-        private String apiKey;
         // 多AI模型API密钥配置
         private Map<String, String> aiApiKeys = new HashMap<>();
         // 自定义 OpenAI 兼容模型配置
@@ -310,24 +307,6 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         }
 
         /**
-         * 获取API密钥（兼容旧版本）
-         * @deprecated 请使用 getAiApiKey(String provider) 方法
-         */
-        @Deprecated
-        public String getApiKey() {
-            return this.apiKey;
-        }
-
-        /**
-         * 设置API密钥（兼容旧版本）
-         * @deprecated 请使用 setAiApiKey(String provider, String apiKey) 方法
-         */
-        @Deprecated
-        public void setApiKey(String apiKey) {
-            this.apiKey = apiKey;
-        }
-
-        /**
          * 获取指定AI提供商的API密钥
          * @param provider AI提供商名称（如：DEEPSEEK, OPENAI, ANTHROPIC等）
          * @return API密钥，如果未配置则返回null
@@ -336,35 +315,7 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
             if (provider == null) {
                 return null;
             }
-            String key = aiApiKeys.get(provider.toUpperCase());
-            // 向后兼容：如果新配置为空且是默认提供商，尝试使用旧的apiKey
-            if (key == null && "DEEPSEEK".equals(provider.toUpperCase()) && apiKey != null) {
-                return apiKey;
-            }
-            return key;
-        }
-
-        /**
-         * 设置指定AI提供商的API密钥
-         * @param provider AI提供商名称
-         * @param apiKey API密钥
-         */
-        public void setAiApiKey(String provider, String apiKey) {
-            if (provider != null) {
-                if (apiKey == null || apiKey.trim().isEmpty()) {
-                    aiApiKeys.remove(provider.toUpperCase());
-                } else {
-                    aiApiKeys.put(provider.toUpperCase(), apiKey.trim());
-                }
-            }
-        }
-
-        /**
-         * 获取所有AI提供商的API密钥配置
-         * @return API密钥配置Map
-         */
-        public Map<String, String> getAiApiKeys() {
-            return new HashMap<>(aiApiKeys);
+            return aiApiKeys.get(provider.toUpperCase());
         }
 
         /**
@@ -388,39 +339,6 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         public List<CustomAiProviderConfig> getCustomAiProviders() {
             if (customAiProviders == null) {
                 customAiProviders = new java.util.ArrayList<>();
-
-                // Add default DeepSeek configuration if empty
-                if (aiApiKeys.containsKey("DEEPSEEK") || apiKey != null) {
-                    String dsKey = aiApiKeys.containsKey("DEEPSEEK") ? aiApiKeys.get("DEEPSEEK") : apiKey;
-                    if (dsKey != null && !dsKey.isEmpty()) {
-                        customAiProviders.add(new CustomAiProviderConfig(
-                                "DeepSeek",
-                                "https://api.deepseek.com/chat/completions",
-                                dsKey,
-                                "deepseek-coder,deepseek-chat"
-                        ));
-                    }
-                }
-                if (aiApiKeys.containsKey("OPENAI")) {
-                    String oaKey = aiApiKeys.get("OPENAI");
-                    if (oaKey != null && !oaKey.isEmpty()) {
-                        customAiProviders.add(new CustomAiProviderConfig(
-                                "OpenAI",
-                                "https://api.openai.com/v1/chat/completions",
-                                oaKey,
-                                "gpt-3.5-turbo,gpt-4"
-                        ));
-                    }
-                }
-
-                if (customAiProviders.isEmpty()) {
-                    customAiProviders.add(new CustomAiProviderConfig(
-                            "DeepSeek",
-                            "https://api.deepseek.com/chat/completions",
-                            "",
-                            "deepseek-coder,deepseek-chat"
-                    ));
-                }
             }
             return customAiProviders;
         }

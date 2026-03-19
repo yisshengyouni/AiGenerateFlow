@@ -28,8 +28,7 @@ public class AiUtils {
 
     // AI模型提供商枚举
     public enum AiProvider {
-        ANTHROPIC("https://api.anthropic.com/v1/messages", "claude-3-sonnet-20240229"),
-        BAIDU("https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions", "ernie-bot"),
+        ANTHROPIC("https://api.anthropic.com/v1/messages", "claude-4.6-sonnet"),
         ALIBABA("https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation", "qwen-turbo"),
         CUSTOM("Custom", "Custom");
 
@@ -41,8 +40,6 @@ public class AiUtils {
             this.defaultModel = defaultModel;
         }
 
-        public String getApiUrl() { return apiUrl; }
-        public String getDefaultModel() { return defaultModel; }
     }
 
     // AI请求配置类
@@ -56,19 +53,22 @@ public class AiUtils {
         private String customApiUrl;
         private String providerName;
 
-        public AiConfig(AiProvider provider, String apiKey) {
-            this.provider = provider;
-            this.apiKey = apiKey;
-            this.model = provider.getDefaultModel();
-            this.customApiUrl = provider.getApiUrl();
-            this.providerName = provider.name();
-        }
 
         public AiConfig(IdeaSettings.CustomAiProviderConfig customConfig, String specificModel) {
-            this.provider = AiProvider.CUSTOM;
+            switch (customConfig.getName().toUpperCase()) {
+                case "ANTHROPIC":
+                    this.provider = AiProvider.ANTHROPIC;
+                    break;
+                case "ALIBABA":
+                    this.provider = AiProvider.ALIBABA;
+                    break;
+                default:
+                    this.provider = AiProvider.CUSTOM;
+                    break;
+            }
+            this.customApiUrl = customConfig.getApiUrl();
             this.apiKey = customConfig.getApiKey();
             this.model = specificModel != null && !specificModel.isEmpty() ? specificModel : customConfig.getModels().split(",")[0];
-            this.customApiUrl = customConfig.getApiUrl();
             this.providerName = customConfig.getName();
         }
 
@@ -153,8 +153,6 @@ public class AiUtils {
                     return callOpenAiCompatible(prompt, config, startTime);
                 case ANTHROPIC:
                     return callAnthropic(prompt, config, startTime);
-                case BAIDU:
-                    return callBaidu(prompt, config, startTime);
                 case ALIBABA:
                     return callAlibaba(prompt, config, startTime);
                 default:
@@ -266,6 +264,7 @@ public class AiUtils {
 
         Response response = getOkHttpClient().newCall(request).execute();
         String responseBody = response.body().string();
+        System.out.println(responseBody);
 
         if (!response.isSuccessful()) {
             return new AiResponse(false, null, "HTTP " + response.code() + ": " + responseBody,
@@ -283,56 +282,6 @@ public class AiUtils {
                 jsonObject.has("usage") ? jsonObject.get("usage") : null);
     }
 
-    /**
-     * 百度文心一言调用格式
-     */
-    private static AiResponse callBaidu(String prompt, AiConfig config, long startTime) throws IOException {
-        // 百度需要先获取access_token，这里简化处理
-        JsonObject requestJson = new JsonObject();
-        JsonArray messages = new JsonArray();
-
-        JsonObject systemMessage = new JsonObject();
-        systemMessage.addProperty("role", "system");
-        systemMessage.addProperty("content", config.getSystemMessage());
-        messages.add(systemMessage);
-
-        JsonObject userMessage = new JsonObject();
-        userMessage.addProperty("role", "user");
-        userMessage.addProperty("content", prompt);
-        messages.add(userMessage);
-
-        requestJson.add("messages", messages);
-        requestJson.addProperty("temperature", config.getTemperature());
-        requestJson.addProperty("max_output_tokens", config.getMaxTokens());
-
-        MediaType mediaType = MediaType.parse("application/json");
-        RequestBody body = RequestBody.create(mediaType, requestJson.toString());
-
-        // 注意：百度API需要在URL中添加access_token参数
-        String urlWithToken = config.getApiUrl() + "?access_token=" + config.getApiKey();
-
-        Request request = new Request.Builder()
-                .url(urlWithToken)
-                .method("POST", body)
-                .addHeader("Content-Type", "application/json")
-                .build();
-
-        Response response = getOkHttpClient().newCall(request).execute();
-        String responseBody = response.body().string();
-
-        if (!response.isSuccessful()) {
-            return new AiResponse(false, null, "HTTP " + response.code() + ": " + responseBody,
-                    System.currentTimeMillis() - startTime, null);
-        }
-
-        Gson gson = new Gson();
-        JsonObject jsonObject = gson.fromJson(responseBody, JsonObject.class);
-
-        String content = jsonObject.get("result").getAsString();
-
-        return new AiResponse(true, content, null, System.currentTimeMillis() - startTime,
-                jsonObject.has("usage") ? jsonObject.get("usage") : null);
-    }
 
     /**
      * 阿里通义千问调用格式
@@ -357,8 +306,8 @@ public class AiUtils {
         requestJson.addProperty("model", config.getModel());
 
         JsonObject parameters = new JsonObject();
-        parameters.addProperty("temperature", config.getTemperature());
-        parameters.addProperty("max_tokens", config.getMaxTokens());
+//        parameters.addProperty("temperature", config.getTemperature());
+//        parameters.addProperty("max_tokens", config.getMaxTokens());
         requestJson.add("parameters", parameters);
 
         MediaType mediaType = MediaType.parse("application/json");
@@ -373,6 +322,7 @@ public class AiUtils {
 
         Response response = getOkHttpClient().newCall(request).execute();
         String responseBody = response.body().string();
+        System.out.println(responseBody);
 
         if (!response.isSuccessful()) {
             return new AiResponse(false, null, "HTTP " + response.code() + ": " + responseBody,
@@ -382,28 +332,18 @@ public class AiUtils {
         Gson gson = new Gson();
         JsonObject jsonObject = gson.fromJson(responseBody, JsonObject.class);
 
-        String content = jsonObject.getAsJsonObject("output")
-                .get("text").getAsString();
+        try {
+            String content = jsonObject.getAsJsonObject("output").getAsJsonArray("choices").get(0).getAsJsonObject().getAsJsonObject("message")
+                    .get("content").getAsString();
 
-        return new AiResponse(true, content, null, System.currentTimeMillis() - startTime,
-                jsonObject.has("usage") ? jsonObject.get("usage") : null);
-    }
-
-    /**
-     * 便捷方法，保持向后兼容
-     * 优先使用新的自定义模型配置
-     */
-    @Deprecated
-    public static String okRequest(String prompt) {
-        java.util.List<IdeaSettings.CustomAiProviderConfig> customProviders = getCustomProviders();
-        if (!customProviders.isEmpty()) {
-            IdeaSettings.CustomAiProviderConfig provider = customProviders.get(0);
-            AiConfig config = new AiConfig(provider, null);
-            AiResponse response = callAi(prompt, config);
-            return response.isSuccess() ? response.getContent() : null;
+            return new AiResponse(true, content, null, System.currentTimeMillis() - startTime,
+                    jsonObject.has("usage") ? jsonObject.get("usage") : null);
+        }catch (Exception e) {
+            log.error("AI call failed, responseBody : \n "+responseBody, e);
+            return new AiResponse(true, responseBody, null, System.currentTimeMillis() - startTime,
+                    jsonObject.has("usage") ? jsonObject.get("usage") : null);
         }
-        
-        log.warn("No API key configured for any AI provider");
-        return null;
+
     }
+
 }
