@@ -195,6 +195,27 @@ public class FlowDiagramAction extends AnAction implements DumbAware {
         buttonPanel.add(modelLabel);
         buttonPanel.add(modelComboBox);
 
+        // 提示词选择下拉框
+        JLabel promptLabel = new JLabel("提示词:");
+        java.util.List<IdeaSettings.PromptConfig> prompts = IdeaSettings.getInstance().getState().getFlowPrompts();
+        JComboBox<IdeaSettings.PromptConfig> promptComboBox = new JComboBox<>(prompts.toArray(new IdeaSettings.PromptConfig[0]));
+
+        if (!prompts.isEmpty()) {
+            promptComboBox.setSelectedIndex(0);
+        }
+        promptComboBox.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof IdeaSettings.PromptConfig) {
+                    setText(((IdeaSettings.PromptConfig) value).getName());
+                }
+                return this;
+            }
+        });
+        buttonPanel.add(promptLabel);
+        buttonPanel.add(promptComboBox);
+
         // 生成流程按钮
         JButton generateButton = new JButton("生成流程");
         generateButton.addActionListener(e -> {
@@ -240,7 +261,8 @@ public class FlowDiagramAction extends AnAction implements DumbAware {
                     indicator.setIndeterminate(true);
 
                     // 生成PlantUML流程图
-                    String flowPromptTemplate = getFlowDiagramPrompt();
+                    IdeaSettings.PromptConfig selectedPromptConfig = (IdeaSettings.PromptConfig) promptComboBox.getSelectedItem();
+                    String flowPromptTemplate = selectedPromptConfig != null ? selectedPromptConfig.getPrompt() : getFlowDiagramPrompt();
                     String flowPrompt = String.format(flowPromptTemplate, collectedCode);
                     
                     // 使用选择的AI模型调用（自动获取API密钥）

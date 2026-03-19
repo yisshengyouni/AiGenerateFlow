@@ -4,7 +4,10 @@ import com.huq.idea.flow.util.AiUtils;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -19,6 +22,10 @@ public class AiConfigurationComponent {
     private JPanel mainPanel;
     private JTextField plantumlPathVal;
     private JTextArea flowPromptTextArea;
+    private DefaultListModel<String> promptListModel;
+    private JList<String> promptList;
+    private List<IdeaSettings.PromptConfig> promptConfigs;
+    private int currentPromptIndex = -1;
     private JTextArea relevantPatternsArea;
     private JTextArea excludedPatternsArea;
     
@@ -30,12 +37,29 @@ public class AiConfigurationComponent {
     private JPanel patternConfigPanel;
 
     public void init(IdeaSettings.State state) {
+        // 深拷贝 promptConfigs
+        promptConfigs = new ArrayList<>();
+        if (state.getFlowPrompts() != null) {
+            for (IdeaSettings.PromptConfig config : state.getFlowPrompts()) {
+                promptConfigs.add(new IdeaSettings.PromptConfig(config.getName(), config.getPrompt()));
+            }
+        }
+
         // 创建所有UI组件
         createUIComponents();
         
         // 设置数据
         plantumlPathVal.setText(state.getPlantumlPathVal());
-        flowPromptTextArea.setText(state.getBuildFlowPrompt());
+
+        promptListModel.clear();
+        for (IdeaSettings.PromptConfig config : promptConfigs) {
+            promptListModel.addElement(config.getName());
+        }
+
+        if (!promptConfigs.isEmpty()) {
+            promptList.setSelectedIndex(0);
+        }
+
         relevantPatternsArea.setText(String.join("\n", state.getRelevantClassPatterns()));
         excludedPatternsArea.setText(String.join("\n", state.getExcludedClassPatterns()));
 
@@ -173,31 +197,107 @@ public class AiConfigurationComponent {
      * 创建提示词配置面板
      */
     private void createPromptConfigPanel() {
-        promptConfigPanel = new JPanel(new GridBagLayout());
+        promptConfigPanel = new JPanel(new BorderLayout());
         promptConfigPanel.setBorder(new TitledBorder("提示词配置"));
-        
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.anchor = GridBagConstraints.WEST;
-        
-        // 流程图提示词配置
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        JLabel promptLabel = new JLabel("流程图生成提示词:");
-        promptLabel.setPreferredSize(new Dimension(120, 25));
-        promptConfigPanel.add(promptLabel, gbc);
-        
-        gbc.gridx = 1;
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.weightx = 1.0;
-        gbc.weighty = 1.0;
+
+        // Left Panel: List of prompts
+        JPanel leftPanel = new JPanel(new BorderLayout());
+        promptListModel = new DefaultListModel<>();
+        promptList = new JList<>(promptListModel);
+        promptList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        JScrollPane listScrollPane = new JScrollPane(promptList);
+        listScrollPane.setPreferredSize(new Dimension(150, 0));
+        leftPanel.add(listScrollPane, BorderLayout.CENTER);
+
+        // Buttons for list
+        JPanel listButtonsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 2));
+        JButton addButton = new JButton("添加");
+        JButton removeButton = new JButton("删除");
+        JButton renameButton = new JButton("重命名");
+
+        listButtonsPanel.add(addButton);
+        listButtonsPanel.add(removeButton);
+        listButtonsPanel.add(renameButton);
+        leftPanel.add(listButtonsPanel, BorderLayout.SOUTH);
+
+        // Right Panel: Text area for selected prompt
+        JPanel rightPanel = new JPanel(new BorderLayout());
         flowPromptTextArea = new JTextArea(5, 30);
         flowPromptTextArea.setToolTipText("自定义AI生成流程图的提示词");
         flowPromptTextArea.setLineWrap(true);
         flowPromptTextArea.setWrapStyleWord(true);
         JScrollPane promptScrollPane = new JScrollPane(flowPromptTextArea);
         promptScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        promptConfigPanel.add(promptScrollPane, gbc);
+        rightPanel.add(new JLabel("提示词内容:"), BorderLayout.NORTH);
+        rightPanel.add(promptScrollPane, BorderLayout.CENTER);
+
+        // Create Split Pane
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, rightPanel);
+        splitPane.setDividerLocation(200);
+        promptConfigPanel.add(splitPane, BorderLayout.CENTER);
+
+        // Event Listeners
+        promptList.addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                if (!e.getValueIsAdjusting()) {
+                    // Save previous prompt if we were editing one
+                    if (currentPromptIndex >= 0 && currentPromptIndex < promptConfigs.size()) {
+                        promptConfigs.get(currentPromptIndex).setPrompt(flowPromptTextArea.getText());
+                    }
+
+                    currentPromptIndex = promptList.getSelectedIndex();
+                    if (currentPromptIndex >= 0 && currentPromptIndex < promptConfigs.size()) {
+                        flowPromptTextArea.setText(promptConfigs.get(currentPromptIndex).getPrompt());
+                        flowPromptTextArea.setEnabled(true);
+                    } else {
+                        flowPromptTextArea.setText("");
+                        flowPromptTextArea.setEnabled(false);
+                    }
+                }
+            }
+        });
+
+        addButton.addActionListener(e -> {
+            String name = JOptionPane.showInputDialog(mainPanel, "请输入新提示词名称:", "添加提示词", JOptionPane.PLAIN_MESSAGE);
+            if (name != null && !name.trim().isEmpty()) {
+                IdeaSettings.PromptConfig newConfig = new IdeaSettings.PromptConfig(name.trim(), IdeaSettings.DEFAULT_BUILD_FLOW_PROMPT);
+                promptConfigs.add(newConfig);
+                promptListModel.addElement(newConfig.getName());
+                promptList.setSelectedIndex(promptListModel.size() - 1);
+            }
+        });
+
+        removeButton.addActionListener(e -> {
+            int selectedIndex = promptList.getSelectedIndex();
+            if (selectedIndex >= 0) {
+                // If we are deleting the last item, ensure there is at least one
+                if (promptConfigs.size() <= 1) {
+                    JOptionPane.showMessageDialog(mainPanel, "必须保留至少一个提示词配置。", "无法删除", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                currentPromptIndex = -1; // Prevent saving to the deleted index
+                promptConfigs.remove(selectedIndex);
+                promptListModel.remove(selectedIndex);
+                if (selectedIndex >= promptListModel.size()) {
+                    promptList.setSelectedIndex(promptListModel.size() - 1);
+                } else {
+                    promptList.setSelectedIndex(selectedIndex);
+                }
+            }
+        });
+
+        renameButton.addActionListener(e -> {
+            int selectedIndex = promptList.getSelectedIndex();
+            if (selectedIndex >= 0) {
+                String oldName = promptConfigs.get(selectedIndex).getName();
+                String newName = JOptionPane.showInputDialog(mainPanel, "请输入新名称:", oldName);
+                if (newName != null && !newName.trim().isEmpty()) {
+                    promptConfigs.get(selectedIndex).setName(newName.trim());
+                    promptListModel.set(selectedIndex, newName.trim());
+                }
+            }
+        });
     }
     
     /**
@@ -333,6 +433,14 @@ public class AiConfigurationComponent {
 
     public String getBuildFlowPrompt() {
         return this.flowPromptTextArea.getText();
+    }
+
+    public List<IdeaSettings.PromptConfig> getFlowPrompts() {
+        // Ensure the current edited text is saved to the active prompt config
+        if (currentPromptIndex >= 0 && currentPromptIndex < promptConfigs.size()) {
+            promptConfigs.get(currentPromptIndex).setPrompt(flowPromptTextArea.getText());
+        }
+        return promptConfigs;
     }
 
 

@@ -136,6 +136,35 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         this.state = state;
     }
 
+    public static class PromptConfig {
+        private String name;
+        private String prompt;
+
+        public PromptConfig() {
+        }
+
+        public PromptConfig(String name, String prompt) {
+            this.name = name;
+            this.prompt = prompt;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getPrompt() {
+            return prompt;
+        }
+
+        public void setPrompt(String prompt) {
+            this.prompt = prompt;
+        }
+    }
+
     public static class State {
         private String plantumlPathVal;
         // 兼容旧版本的单一apiKey配置
@@ -145,6 +174,7 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         private Map<String, String> aiApiKeys = new HashMap<>();
         private String buildMethodPrompt = DEFAULT_BUILD_METHOD_PROMPT;
         private String buildFlowPrompt = DEFAULT_BUILD_FLOW_PROMPT;
+        private List<PromptConfig> flowPrompts;
         private String buildFlowJsonPrompt = DEFAULT_BUILD_FLOW_JSON_PROMPT;
         private String umlSequencePrompt = DEFAULT_UML_SEQUENCE_PROMPT;
         private List<String> relevantClassPatterns = Arrays.asList(
@@ -194,6 +224,22 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
 
         public void setBuildFlowPrompt(String buildFlowPrompt) {
             this.buildFlowPrompt = buildFlowPrompt;
+        }
+
+        public List<PromptConfig> getFlowPrompts() {
+            if (flowPrompts == null || flowPrompts.isEmpty()) {
+                flowPrompts = new java.util.ArrayList<>();
+                if (buildFlowPrompt != null && !buildFlowPrompt.isEmpty()) {
+                    flowPrompts.add(new PromptConfig("Default", buildFlowPrompt));
+                } else {
+                    flowPrompts.add(new PromptConfig("Default", DEFAULT_BUILD_FLOW_PROMPT));
+                }
+            }
+            return flowPrompts;
+        }
+
+        public void setFlowPrompts(List<PromptConfig> flowPrompts) {
+            this.flowPrompts = flowPrompts;
         }
 
         public String getBuildFlowJsonPrompt() {

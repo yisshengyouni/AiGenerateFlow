@@ -44,6 +44,7 @@ public class IdeaConfigurable implements Configurable {
         state.setAiApiKeys(settingsComponent.getAiApiKeys());
         
         state.setBuildFlowPrompt(settingsComponent.getBuildFlowPrompt());
+        state.setFlowPrompts(settingsComponent.getFlowPrompts());
         state.setPlantumlPathVal(settingsComponent.getPlantumlPathValue());
         state.setRelevantClassPatterns(settingsComponent.getRelevantPatterns());
         state.setExcludedClassPatterns(settingsComponent.getExcludedPatterns());

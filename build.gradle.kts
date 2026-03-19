@@ -18,7 +18,7 @@ repositories {
 // Configure Gradle IntelliJ Plugin
 // Read more: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html
 intellij {
-  localPath.set("C:\\Program Files\\JetBrains\\IntelliJ IDEA 2025.3.2")
+  version.set("2023.2")
   type.set("IC") // Target IDE Platform
   plugins.set(listOf("com.intellij.java"))
 }
