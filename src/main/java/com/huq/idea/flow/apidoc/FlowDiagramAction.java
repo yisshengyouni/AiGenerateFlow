@@ -22,6 +22,7 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.ui.ComboBox;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiJavaFile;
 import com.intellij.psi.PsiMethod;
@@ -172,28 +173,73 @@ public class FlowDiagramAction extends AnAction implements DumbAware {
         // 底部按钮面板
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 
-        // AI模型选择下拉框（只显示已配置API密钥的模型）
-        JLabel modelLabel = new JLabel("AI模型:");
-        java.util.List<AiUtils.AiProvider> availableProviders = AiUtils.getAvailableProviders();
-        JComboBox<AiUtils.AiProvider> modelComboBox = new JComboBox<>(availableProviders.toArray(new AiUtils.AiProvider[0]));
-        
+        // AI 提供商选择下拉框
+        JLabel providerLabel = new JLabel("AI 提供商:");
+        java.util.List<IdeaSettings.CustomAiProviderConfig> availableProviders = AiUtils.getCustomProviders();
+        ComboBox<IdeaSettings.CustomAiProviderConfig> providerComboBox = new ComboBox<>(availableProviders.toArray(new IdeaSettings.CustomAiProviderConfig[0]));
+
+        // 具体模型选择下拉框
+        JLabel specificModelLabel = new JLabel("具体模型:");
+        ComboBox<String> specificModelComboBox = new ComboBox<>();
+
+        // 监听提供商改变时，更新可用模型列表
+        providerComboBox.addActionListener(e -> {
+            IdeaSettings.CustomAiProviderConfig selected = (IdeaSettings.CustomAiProviderConfig) providerComboBox.getSelectedItem();
+            specificModelComboBox.removeAllItems();
+            if (selected != null && selected.getModels() != null) {
+                String[] models = selected.getModels().split(",");
+                for (String model : models) {
+                    specificModelComboBox.addItem(model.trim());
+                }
+                if (models.length > 0) {
+                    specificModelComboBox.setSelectedIndex(0);
+                }
+            }
+        });
+
         // 设置默认选择
         if (!availableProviders.isEmpty()) {
-            modelComboBox.setSelectedItem(availableProviders.get(0));
+            providerComboBox.setSelectedIndex(-1);
+            providerComboBox.setSelectedIndex(0);
         }
-        modelComboBox.setRenderer(new DefaultListCellRenderer() {
+
+        providerComboBox.setRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                if (value instanceof AiUtils.AiProvider) {
-                    AiUtils.AiProvider provider = (AiUtils.AiProvider) value;
-                    setText(getProviderDisplayName(provider) + " (" + provider.getDefaultModel() + ")");
+                if (value instanceof IdeaSettings.CustomAiProviderConfig) {
+                    IdeaSettings.CustomAiProviderConfig provider = (IdeaSettings.CustomAiProviderConfig) value;
+                    setText(provider.getName());
                 }
                 return this;
             }
         });
-        buttonPanel.add(modelLabel);
-        buttonPanel.add(modelComboBox);
+
+        buttonPanel.add(providerLabel);
+        buttonPanel.add(providerComboBox);
+        buttonPanel.add(specificModelLabel);
+        buttonPanel.add(specificModelComboBox);
+
+        // 提示词选择下拉框
+        JLabel promptLabel = new JLabel("提示词:");
+        java.util.List<IdeaSettings.PromptConfig> prompts = IdeaSettings.getInstance().getState().getFlowPrompts();
+        ComboBox<IdeaSettings.PromptConfig> promptComboBox = new ComboBox<>(prompts.toArray(new IdeaSettings.PromptConfig[0]));
+
+        if (!prompts.isEmpty()) {
+            promptComboBox.setSelectedIndex(0);
+        }
+        promptComboBox.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof IdeaSettings.PromptConfig) {
+                    setText(((IdeaSettings.PromptConfig) value).getName());
+                }
+                return this;
+            }
+        });
+        buttonPanel.add(promptLabel);
+        buttonPanel.add(promptComboBox);
 
         // 生成流程按钮
         JButton generateButton = new JButton("生成流程");
@@ -203,13 +249,15 @@ public class FlowDiagramAction extends AnAction implements DumbAware {
             generateButton.setText("生成中...");
 
             // 获取选择的AI提供商
-            AiUtils.AiProvider selectedProvider = (AiUtils.AiProvider) modelComboBox.getSelectedItem();
+            IdeaSettings.CustomAiProviderConfig selectedProvider = (IdeaSettings.CustomAiProviderConfig) providerComboBox.getSelectedItem();
+            String selectedModel = (String) specificModelComboBox.getSelectedItem();
+
             if (selectedProvider == null) {
                 LOG.info("No AI provider selected or available");
                 Notifications.Bus.notify(new Notification(
                         "com.yt.huq.idea",
                         "无可用AI模型",
-                        "未选择AI模型或没有可用的AI模型。请在设置 > UmlFlowAiConfigurable 中配置至少一个AI模型的API密钥",
+                        "未选择AI提供商或没有可用的AI提供商。请在设置 > UmlFlowAiConfigurable 中配置至少一个提供商",
                         NotificationType.ERROR),
                         project);
                 // 重新启用按钮
@@ -240,18 +288,19 @@ public class FlowDiagramAction extends AnAction implements DumbAware {
                     indicator.setIndeterminate(true);
 
                     // 生成PlantUML流程图
-                    String flowPromptTemplate = getFlowDiagramPrompt();
+                    IdeaSettings.PromptConfig selectedPromptConfig = (IdeaSettings.PromptConfig) promptComboBox.getSelectedItem();
+                    String flowPromptTemplate = selectedPromptConfig != null ? selectedPromptConfig.getPrompt() : getFlowDiagramPrompt();
                     String flowPrompt = String.format(flowPromptTemplate, collectedCode);
                     
-                    // 使用选择的AI模型调用（自动获取API密钥）
-                    AiUtils.AiConfig config = AiUtils.createConfigWithApiKey(selectedProvider);
-                    if (config == null) {
+                    // 使用选择的AI模型调用
+                    AiUtils.AiConfig config = new AiUtils.AiConfig(selectedProvider, selectedModel);
+                    if (config.getApiKey() == null || config.getApiKey().trim().isEmpty()) {
                         SwingUtilities.invokeLater(() -> {
                             generateButton.setEnabled(true);
                             Notifications.Bus.notify(new Notification(
                                 "com.yt.huq.idea",
                                 "API密钥未配置",
-                                "请在设置中为 " + getProviderDisplayName(selectedProvider) + " 配置API密钥",
+                                "请在设置中为 " + selectedProvider.getName() + " 配置API密钥",
                                 NotificationType.WARNING),
                                 project);
                         });
@@ -561,19 +610,4 @@ public class FlowDiagramAction extends AnAction implements DumbAware {
         return IdeaSettings.getInstance().getState().getBuildFlowPrompt();
     }
 
-    /**
-     * 获取AI提供商的显示名称
-     */
-    private String getProviderDisplayName(AiUtils.AiProvider provider) {
-        switch (provider) {
-            case DEEPSEEK: return "DeepSeek";
-            case OPENAI: return "OpenAI";
-            case ANTHROPIC: return "Anthropic (Claude)";
-            case MOONSHOT: return "月之暗面 (Moonshot)";
-            case BAIDU: return "百度文心一言";
-            case ALIBABA: return "阿里通义千问";
-            case ZHIPU: return "智谱AI (GLM)";
-            default: return provider.name();
-        }
-    }
 }

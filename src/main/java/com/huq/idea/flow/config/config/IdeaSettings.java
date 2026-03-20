@@ -48,16 +48,16 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
             "### 正确定义条件语句：\n" +
             "if (条件?) then (是)\n" +
             "  -[#连接器颜色]-> \n" +
-            " #节点背景色 :活动节点; \n" +
+            " :活动节点;<<#节点背景色>> \n" +
             "elseif (条件?) then (是)\n" +
             "  -[#连接器颜色]-> \n" +
-            " #节点背景色 :活动节点; \n" +
+            " :活动节点;<<#节点背景色>> \n" +
             "else (否)\n" +
-            " #节点背景色 :活动节点; \n" +
+            " :活动节点;<<#节点背景色>> \n" +
             "endif\n" +
             "### 正确使用颜色：\n" +
             "partition { 内容 }  #分区颜色\n" +
-            "#节点背景色 :活动节点; \n" +
+            ":活动节点; <<#节点背景色>> \n" +
             "@enduml\n" +
             "\n" +
             "### 错误预防清单\n" +
@@ -136,15 +136,93 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         this.state = state;
     }
 
+    public static class CustomAiProviderConfig {
+        private String name;
+        private String apiUrl;
+        private String apiKey;
+        private String models; // Comma separated list of models
+
+        public CustomAiProviderConfig() {
+        }
+
+        public CustomAiProviderConfig(String name, String apiUrl, String apiKey, String models) {
+            this.name = name;
+            this.apiUrl = apiUrl;
+            this.apiKey = apiKey;
+            this.models = models;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getApiUrl() {
+            return apiUrl;
+        }
+
+        public void setApiUrl(String apiUrl) {
+            this.apiUrl = apiUrl;
+        }
+
+        public String getApiKey() {
+            return apiKey;
+        }
+
+        public void setApiKey(String apiKey) {
+            this.apiKey = apiKey;
+        }
+
+        public String getModels() {
+            return models;
+        }
+
+        public void setModels(String models) {
+            this.models = models;
+        }
+    }
+
+    public static class PromptConfig {
+        private String name;
+        private String prompt;
+
+        public PromptConfig() {
+        }
+
+        public PromptConfig(String name, String prompt) {
+            this.name = name;
+            this.prompt = prompt;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getPrompt() {
+            return prompt;
+        }
+
+        public void setPrompt(String prompt) {
+            this.prompt = prompt;
+        }
+    }
+
     public static class State {
         private String plantumlPathVal;
-        // 兼容旧版本的单一apiKey配置
-        @Deprecated
-        private String apiKey;
         // 多AI模型API密钥配置
         private Map<String, String> aiApiKeys = new HashMap<>();
+        // 自定义 OpenAI 兼容模型配置
+        private List<CustomAiProviderConfig> customAiProviders;
         private String buildMethodPrompt = DEFAULT_BUILD_METHOD_PROMPT;
         private String buildFlowPrompt = DEFAULT_BUILD_FLOW_PROMPT;
+        private List<PromptConfig> flowPrompts;
         private String buildFlowJsonPrompt = DEFAULT_BUILD_FLOW_JSON_PROMPT;
         private String umlSequencePrompt = DEFAULT_UML_SEQUENCE_PROMPT;
         private List<String> relevantClassPatterns = Arrays.asList(
@@ -196,6 +274,22 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
             this.buildFlowPrompt = buildFlowPrompt;
         }
 
+        public List<PromptConfig> getFlowPrompts() {
+            if (flowPrompts == null || flowPrompts.isEmpty()) {
+                flowPrompts = new java.util.ArrayList<>();
+                if (buildFlowPrompt != null && !buildFlowPrompt.isEmpty()) {
+                    flowPrompts.add(new PromptConfig("Default", buildFlowPrompt));
+                } else {
+                    flowPrompts.add(new PromptConfig("Default", DEFAULT_BUILD_FLOW_PROMPT));
+                }
+            }
+            return flowPrompts;
+        }
+
+        public void setFlowPrompts(List<PromptConfig> flowPrompts) {
+            this.flowPrompts = flowPrompts;
+        }
+
         public String getBuildFlowJsonPrompt() {
             return this.buildFlowJsonPrompt;
         }
@@ -213,24 +307,6 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         }
 
         /**
-         * 获取API密钥（兼容旧版本）
-         * @deprecated 请使用 getAiApiKey(String provider) 方法
-         */
-        @Deprecated
-        public String getApiKey() {
-            return this.apiKey;
-        }
-
-        /**
-         * 设置API密钥（兼容旧版本）
-         * @deprecated 请使用 setAiApiKey(String provider, String apiKey) 方法
-         */
-        @Deprecated
-        public void setApiKey(String apiKey) {
-            this.apiKey = apiKey;
-        }
-
-        /**
          * 获取指定AI提供商的API密钥
          * @param provider AI提供商名称（如：DEEPSEEK, OPENAI, ANTHROPIC等）
          * @return API密钥，如果未配置则返回null
@@ -239,35 +315,7 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
             if (provider == null) {
                 return null;
             }
-            String key = aiApiKeys.get(provider.toUpperCase());
-            // 向后兼容：如果新配置为空且是默认提供商，尝试使用旧的apiKey
-            if (key == null && "DEEPSEEK".equals(provider.toUpperCase()) && apiKey != null) {
-                return apiKey;
-            }
-            return key;
-        }
-
-        /**
-         * 设置指定AI提供商的API密钥
-         * @param provider AI提供商名称
-         * @param apiKey API密钥
-         */
-        public void setAiApiKey(String provider, String apiKey) {
-            if (provider != null) {
-                if (apiKey == null || apiKey.trim().isEmpty()) {
-                    aiApiKeys.remove(provider.toUpperCase());
-                } else {
-                    aiApiKeys.put(provider.toUpperCase(), apiKey.trim());
-                }
-            }
-        }
-
-        /**
-         * 获取所有AI提供商的API密钥配置
-         * @return API密钥配置Map
-         */
-        public Map<String, String> getAiApiKeys() {
-            return new HashMap<>(aiApiKeys);
+            return aiApiKeys.get(provider.toUpperCase());
         }
 
         /**
@@ -286,6 +334,17 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         public boolean hasAiApiKey(String provider) {
             String key = getAiApiKey(provider);
             return key != null && !key.trim().isEmpty();
+        }
+
+        public List<CustomAiProviderConfig> getCustomAiProviders() {
+            if (customAiProviders == null) {
+                customAiProviders = new java.util.ArrayList<>();
+            }
+            return customAiProviders;
+        }
+
+        public void setCustomAiProviders(List<CustomAiProviderConfig> customAiProviders) {
+            this.customAiProviders = customAiProviders;
         }
     }
 }

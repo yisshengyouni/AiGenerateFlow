@@ -4,7 +4,10 @@ import com.huq.idea.flow.util.AiUtils;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -19,6 +22,10 @@ public class AiConfigurationComponent {
     private JPanel mainPanel;
     private JTextField plantumlPathVal;
     private JTextArea flowPromptTextArea;
+    private DefaultListModel<String> promptListModel;
+    private JList<String> promptList;
+    private List<IdeaSettings.PromptConfig> promptConfigs;
+    private int currentPromptIndex = -1;
     private JTextArea relevantPatternsArea;
     private JTextArea excludedPatternsArea;
     
@@ -29,25 +36,56 @@ public class AiConfigurationComponent {
     private JPanel promptConfigPanel;
     private JPanel patternConfigPanel;
 
+    private DefaultListModel<String> aiProviderListModel;
+    private JList<String> aiProviderList;
+    private List<IdeaSettings.CustomAiProviderConfig> customAiProviders;
+    private int currentAiProviderIndex = -1;
+    private JTextField aiProviderNameField;
+    private JTextField aiApiUrlField;
+    private JTextField aiApiKeyField;
+    private JTextField aiModelsField;
+
     public void init(IdeaSettings.State state) {
+        // 深拷贝 promptConfigs
+        promptConfigs = new ArrayList<>();
+        if (state.getFlowPrompts() != null) {
+            for (IdeaSettings.PromptConfig config : state.getFlowPrompts()) {
+                promptConfigs.add(new IdeaSettings.PromptConfig(config.getName(), config.getPrompt()));
+            }
+        }
+
+        customAiProviders = new ArrayList<>();
+        if (state.getCustomAiProviders() != null) {
+            for (IdeaSettings.CustomAiProviderConfig config : state.getCustomAiProviders()) {
+                customAiProviders.add(new IdeaSettings.CustomAiProviderConfig(config.getName(), config.getApiUrl(), config.getApiKey(), config.getModels()));
+            }
+        }
+
         // 创建所有UI组件
         createUIComponents();
         
         // 设置数据
         plantumlPathVal.setText(state.getPlantumlPathVal());
-        flowPromptTextArea.setText(state.getBuildFlowPrompt());
+
+        promptListModel.clear();
+        for (IdeaSettings.PromptConfig config : promptConfigs) {
+            promptListModel.addElement(config.getName());
+        }
+
+        if (!promptConfigs.isEmpty()) {
+            promptList.setSelectedIndex(0);
+        }
+
         relevantPatternsArea.setText(String.join("\n", state.getRelevantClassPatterns()));
         excludedPatternsArea.setText(String.join("\n", state.getExcludedClassPatterns()));
 
-        // 加载AI API密钥配置
-        Map<String, String> aiApiKeys = state.getAiApiKeys();
-        for (AiUtils.AiProvider provider : AiUtils.AiProvider.values()) {
-            String providerName = provider.name();
-            JTextField field = aiApiKeyFields.get(providerName);
-            if (field != null) {
-                String apiKey = state.getAiApiKey(providerName);
-                field.setText(apiKey != null ? apiKey : "");
-            }
+        aiProviderListModel.clear();
+        for (IdeaSettings.CustomAiProviderConfig config : customAiProviders) {
+            aiProviderListModel.addElement(config.getName());
+        }
+
+        if (!customAiProviders.isEmpty()) {
+            aiProviderList.setSelectedIndex(0);
         }
     }
 
@@ -108,96 +146,274 @@ public class AiConfigurationComponent {
      * 创建AI配置面板
      */
     private void createAiConfigPanel() {
-        aiConfigPanel = new JPanel(new GridBagLayout());
-        aiConfigPanel.setBorder(new TitledBorder("AI模型API密钥配置"));
-        
+        aiConfigPanel = new JPanel(new BorderLayout());
+        aiConfigPanel.setBorder(new TitledBorder("AI提供商及模型配置 (OpenAI 兼容)"));
+
+        // Left Panel: List of providers
+        JPanel leftPanel = new JPanel(new BorderLayout());
+        aiProviderListModel = new DefaultListModel<>();
+        aiProviderList = new JList<>(aiProviderListModel);
+        aiProviderList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        JScrollPane listScrollPane = new JScrollPane(aiProviderList);
+        listScrollPane.setPreferredSize(new Dimension(150, 0));
+        leftPanel.add(listScrollPane, BorderLayout.CENTER);
+
+        // Buttons for provider list
+        JPanel listButtonsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 2));
+        JButton addButton = new JButton("添加");
+        JButton removeButton = new JButton("删除");
+        listButtonsPanel.add(addButton);
+        listButtonsPanel.add(removeButton);
+        leftPanel.add(listButtonsPanel, BorderLayout.SOUTH);
+
+        // Right Panel: Form for selected provider
+        JPanel rightPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.anchor = GridBagConstraints.WEST;
-        
-        // 添加说明文本
-        JLabel instructionLabel = new JLabel("<html><body style='width: 500px'>" +
-                "<b>配置说明：</b><br/>" +
-                "• 请为您要使用的AI模型配置相应的API密钥<br/>" +
-                "• 只需配置您实际使用的模型，未配置的模型将不可选择<br/>" +
-                "• API密钥获取方式：<br/>" +
-                "&nbsp;&nbsp;- DeepSeek: <a href='https://platform.deepseek.com'>https://platform.deepseek.com</a><br/>" +
-                "&nbsp;&nbsp;- OpenAI: <a href='https://platform.openai.com'>https://platform.openai.com</a><br/>" +
-                "&nbsp;&nbsp;- Anthropic: <a href='https://console.anthropic.com'>https://console.anthropic.com</a><br/>" +
-                "&nbsp;&nbsp;- 月之暗面: <a href='https://platform.moonshot.cn'>https://platform.moonshot.cn</a><br/>" +
-                "&nbsp;&nbsp;- 百度文心: <a href='https://console.bce.baidu.com'>https://console.bce.baidu.com</a><br/>" +
-                "&nbsp;&nbsp;- 阿里通义: <a href='https://dashscope.console.aliyun.com'>https://dashscope.console.aliyun.com</a><br/>" +
-                "&nbsp;&nbsp;- 智谱AI: <a href='https://open.bigmodel.cn'>https://open.bigmodel.cn</a>" +
-                "</body></html>");
-        
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        aiConfigPanel.add(instructionLabel, gbc);
-        
-        // 添加分隔线
-        gbc.gridy++;
-        gbc.insets = new Insets(10, 5, 10, 5);
-        aiConfigPanel.add(new JSeparator(), gbc);
-        
-        // 为每个AI提供商创建输入框
-        gbc.gridwidth = 1;
-        gbc.insets = new Insets(5, 5, 5, 5);
-        
-        for (AiUtils.AiProvider provider : AiUtils.AiProvider.values()) {
-            gbc.gridy++;
-            
-            // 标签
-            String displayName = getProviderDisplayName(provider);
-            JLabel label = new JLabel(displayName + ":");
-            label.setPreferredSize(new Dimension(120, 25));
-            gbc.gridx = 0;
-            gbc.fill = GridBagConstraints.NONE;
-            aiConfigPanel.add(label, gbc);
-            
-            // 输入框
-            JTextField textField = new JTextField(30);
-            textField.setToolTipText("请输入" + displayName + "的API密钥");
-            aiApiKeyFields.put(provider.name(), textField);
-            
-            gbc.gridx = 1;
-            gbc.fill = GridBagConstraints.HORIZONTAL;
-            gbc.weightx = 1.0;
-            aiConfigPanel.add(textField, gbc);
-            gbc.weightx = 0;
-        }
+
+        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0;
+        rightPanel.add(new JLabel("名称:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        aiProviderNameField = new JTextField(30);
+        rightPanel.add(aiProviderNameField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0;
+        rightPanel.add(new JLabel("域名代理 (URL):"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        aiApiUrlField = new JTextField(30);
+        rightPanel.add(aiApiUrlField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0;
+        rightPanel.add(new JLabel("API Key:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        aiApiKeyField = new JTextField(30);
+        rightPanel.add(aiApiKeyField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0;
+        rightPanel.add(new JLabel("可用模型 (逗号分隔):"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        aiModelsField = new JTextField(30);
+        rightPanel.add(aiModelsField, gbc);
+
+        // Spacer
+        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2; gbc.weighty = 1.0; gbc.fill = GridBagConstraints.BOTH;
+        rightPanel.add(new JPanel(), gbc);
+
+        // Create Split Pane
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, rightPanel);
+        splitPane.setDividerLocation(200);
+        aiConfigPanel.add(splitPane, BorderLayout.CENTER);
+
+        boolean[] isUpdatingUI = {false};
+
+        // Setup listeners to save data when moving away
+        Runnable saveCurrentProvider = () -> {
+            if (isUpdatingUI[0]) return;
+            if (currentAiProviderIndex >= 0 && currentAiProviderIndex < customAiProviders.size()) {
+                IdeaSettings.CustomAiProviderConfig config = customAiProviders.get(currentAiProviderIndex);
+                config.setName(aiProviderNameField.getText().trim());
+                config.setApiUrl(aiApiUrlField.getText().trim());
+                config.setApiKey(aiApiKeyField.getText().trim());
+                config.setModels(aiModelsField.getText().trim());
+                if (!aiProviderListModel.get(currentAiProviderIndex).equals(config.getName())) {
+                    isUpdatingUI[0] = true;
+                    aiProviderListModel.set(currentAiProviderIndex, config.getName());
+                    isUpdatingUI[0] = false;
+                }
+            }
+        };
+
+        // Add document listeners to update list model name on the fly if needed
+        aiProviderNameField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { saveCurrentProvider.run(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { saveCurrentProvider.run(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { saveCurrentProvider.run(); }
+        });
+        aiApiUrlField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { saveCurrentProvider.run(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { saveCurrentProvider.run(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { saveCurrentProvider.run(); }
+        });
+        aiApiKeyField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { saveCurrentProvider.run(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { saveCurrentProvider.run(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { saveCurrentProvider.run(); }
+        });
+        aiModelsField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { saveCurrentProvider.run(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { saveCurrentProvider.run(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { saveCurrentProvider.run(); }
+        });
+
+
+        aiProviderList.addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting() && !isUpdatingUI[0]) {
+                saveCurrentProvider.run(); // Ensure current changes are saved before switching
+
+                currentAiProviderIndex = aiProviderList.getSelectedIndex();
+                isUpdatingUI[0] = true;
+                if (currentAiProviderIndex >= 0 && currentAiProviderIndex < customAiProviders.size()) {
+                    IdeaSettings.CustomAiProviderConfig config = customAiProviders.get(currentAiProviderIndex);
+                    aiProviderNameField.setText(config.getName());
+                    aiApiUrlField.setText(config.getApiUrl());
+                    aiApiKeyField.setText(config.getApiKey());
+                    aiModelsField.setText(config.getModels());
+                    setProviderFieldsEnabled(true);
+                } else {
+                    aiProviderNameField.setText("");
+                    aiApiUrlField.setText("");
+                    aiApiKeyField.setText("");
+                    aiModelsField.setText("");
+                    setProviderFieldsEnabled(false);
+                }
+                isUpdatingUI[0] = false;
+            }
+        });
+
+        addButton.addActionListener(e -> {
+            String name = JOptionPane.showInputDialog(mainPanel, "请输入新提供商名称:", "添加提供商", JOptionPane.PLAIN_MESSAGE);
+            if (name != null && !name.trim().isEmpty()) {
+                IdeaSettings.CustomAiProviderConfig newConfig = new IdeaSettings.CustomAiProviderConfig(
+                        name.trim(), "https://api.openai.com/v1/chat/completions", "", "gpt-3.5-turbo");
+                customAiProviders.add(newConfig);
+                aiProviderListModel.addElement(newConfig.getName());
+                aiProviderList.setSelectedIndex(aiProviderListModel.size() - 1);
+            }
+        });
+
+        removeButton.addActionListener(e -> {
+            int selectedIndex = aiProviderList.getSelectedIndex();
+            if (selectedIndex >= 0) {
+                if (customAiProviders.size() <= 1) {
+                    JOptionPane.showMessageDialog(mainPanel, "必须保留至少一个提供商配置。", "无法删除", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                currentAiProviderIndex = -1; // Prevent saving to the deleted index
+                customAiProviders.remove(selectedIndex);
+                aiProviderListModel.remove(selectedIndex);
+                if (selectedIndex >= aiProviderListModel.size()) {
+                    aiProviderList.setSelectedIndex(aiProviderListModel.size() - 1);
+                } else {
+                    aiProviderList.setSelectedIndex(selectedIndex);
+                }
+            }
+        });
+    }
+
+    private void setProviderFieldsEnabled(boolean enabled) {
+        aiProviderNameField.setEnabled(enabled);
+        aiApiUrlField.setEnabled(enabled);
+        aiApiKeyField.setEnabled(enabled);
+        aiModelsField.setEnabled(enabled);
     }
     
     /**
      * 创建提示词配置面板
      */
     private void createPromptConfigPanel() {
-        promptConfigPanel = new JPanel(new GridBagLayout());
+        promptConfigPanel = new JPanel(new BorderLayout());
         promptConfigPanel.setBorder(new TitledBorder("提示词配置"));
-        
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.anchor = GridBagConstraints.WEST;
-        
-        // 流程图提示词配置
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        JLabel promptLabel = new JLabel("流程图生成提示词:");
-        promptLabel.setPreferredSize(new Dimension(120, 25));
-        promptConfigPanel.add(promptLabel, gbc);
-        
-        gbc.gridx = 1;
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.weightx = 1.0;
-        gbc.weighty = 1.0;
+
+        // Left Panel: List of prompts
+        JPanel leftPanel = new JPanel(new BorderLayout());
+        promptListModel = new DefaultListModel<>();
+        promptList = new JList<>(promptListModel);
+        promptList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        JScrollPane listScrollPane = new JScrollPane(promptList);
+        listScrollPane.setPreferredSize(new Dimension(150, 0));
+        leftPanel.add(listScrollPane, BorderLayout.CENTER);
+
+        // Buttons for list
+        JPanel listButtonsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 2));
+        JButton addButton = new JButton("添加");
+        JButton removeButton = new JButton("删除");
+        JButton renameButton = new JButton("重命名");
+
+        listButtonsPanel.add(addButton);
+        listButtonsPanel.add(removeButton);
+        listButtonsPanel.add(renameButton);
+        leftPanel.add(listButtonsPanel, BorderLayout.SOUTH);
+
+        // Right Panel: Text area for selected prompt
+        JPanel rightPanel = new JPanel(new BorderLayout());
         flowPromptTextArea = new JTextArea(5, 30);
         flowPromptTextArea.setToolTipText("自定义AI生成流程图的提示词");
         flowPromptTextArea.setLineWrap(true);
         flowPromptTextArea.setWrapStyleWord(true);
         JScrollPane promptScrollPane = new JScrollPane(flowPromptTextArea);
         promptScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        promptConfigPanel.add(promptScrollPane, gbc);
+        rightPanel.add(new JLabel("提示词内容:"), BorderLayout.NORTH);
+        rightPanel.add(promptScrollPane, BorderLayout.CENTER);
+
+        // Create Split Pane
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, rightPanel);
+        splitPane.setDividerLocation(200);
+        promptConfigPanel.add(splitPane, BorderLayout.CENTER);
+
+        // Event Listeners
+        promptList.addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                if (!e.getValueIsAdjusting()) {
+                    // Save previous prompt if we were editing one
+                    if (currentPromptIndex >= 0 && currentPromptIndex < promptConfigs.size()) {
+                        promptConfigs.get(currentPromptIndex).setPrompt(flowPromptTextArea.getText());
+                    }
+
+                    currentPromptIndex = promptList.getSelectedIndex();
+                    if (currentPromptIndex >= 0 && currentPromptIndex < promptConfigs.size()) {
+                        flowPromptTextArea.setText(promptConfigs.get(currentPromptIndex).getPrompt());
+                        flowPromptTextArea.setEnabled(true);
+                    } else {
+                        flowPromptTextArea.setText("");
+                        flowPromptTextArea.setEnabled(false);
+                    }
+                }
+            }
+        });
+
+        addButton.addActionListener(e -> {
+            String name = JOptionPane.showInputDialog(mainPanel, "请输入新提示词名称:", "添加提示词", JOptionPane.PLAIN_MESSAGE);
+            if (name != null && !name.trim().isEmpty()) {
+                IdeaSettings.PromptConfig newConfig = new IdeaSettings.PromptConfig(name.trim(), IdeaSettings.DEFAULT_BUILD_FLOW_PROMPT);
+                promptConfigs.add(newConfig);
+                promptListModel.addElement(newConfig.getName());
+                promptList.setSelectedIndex(promptListModel.size() - 1);
+            }
+        });
+
+        removeButton.addActionListener(e -> {
+            int selectedIndex = promptList.getSelectedIndex();
+            if (selectedIndex >= 0) {
+                // If we are deleting the last item, ensure there is at least one
+                if (promptConfigs.size() <= 1) {
+                    JOptionPane.showMessageDialog(mainPanel, "必须保留至少一个提示词配置。", "无法删除", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                currentPromptIndex = -1; // Prevent saving to the deleted index
+                promptConfigs.remove(selectedIndex);
+                promptListModel.remove(selectedIndex);
+                if (selectedIndex >= promptListModel.size()) {
+                    promptList.setSelectedIndex(promptListModel.size() - 1);
+                } else {
+                    promptList.setSelectedIndex(selectedIndex);
+                }
+            }
+        });
+
+        renameButton.addActionListener(e -> {
+            int selectedIndex = promptList.getSelectedIndex();
+            if (selectedIndex >= 0) {
+                String oldName = promptConfigs.get(selectedIndex).getName();
+                String newName = JOptionPane.showInputDialog(mainPanel, "请输入新名称:", oldName);
+                if (newName != null && !newName.trim().isEmpty()) {
+                    promptConfigs.get(selectedIndex).setName(newName.trim());
+                    promptListModel.set(selectedIndex, newName.trim());
+                }
+            }
+        });
     }
     
     /**
@@ -250,21 +466,6 @@ public class AiConfigurationComponent {
         patternConfigPanel.add(excludedScrollPane, gbc);
     }
     
-    /**
-     * 获取AI提供商的显示名称
-     */
-    private String getProviderDisplayName(AiUtils.AiProvider provider) {
-        switch (provider) {
-            case DEEPSEEK: return "DeepSeek";
-            case OPENAI: return "OpenAI";
-            case ANTHROPIC: return "Anthropic (Claude)";
-            case MOONSHOT: return "月之暗面 (Moonshot)";
-            case BAIDU: return "百度文心一言";
-            case ALIBABA: return "阿里通义千问";
-            case ZHIPU: return "智谱AI (GLM)";
-            default: return provider.name();
-        }
-    }
 
 
     public List<String> getRelevantPatterns() {
@@ -301,38 +502,31 @@ public class AiConfigurationComponent {
         return aiConfigPanel;
     }
     
-    /**
-     * 获取所有AI提供商的API密钥配置
-     * @return API密钥配置Map
-     */
     public Map<String, String> getAiApiKeys() {
-        Map<String, String> apiKeys = new HashMap<>();
-        for (Map.Entry<String, JTextField> entry : aiApiKeyFields.entrySet()) {
-            String provider = entry.getKey();
-            String apiKey = entry.getValue().getText();
-            if (apiKey != null && !apiKey.trim().isEmpty()) {
-                apiKeys.put(provider, apiKey.trim());
-            }
-        }
-        return apiKeys;
+        return new HashMap<>(); // Deprecated/Not used anymore for custom ones, but kept to satisfy IdeaConfigurable compilation
     }
     
-    /**
-     * 获取指定AI提供商的API密钥
-     * @param provider AI提供商名称
-     * @return API密钥
-     */
-    public String getAiApiKey(String provider) {
-        JTextField field = aiApiKeyFields.get(provider);
-        if (field != null) {
-            String apiKey = field.getText();
-            return apiKey != null ? apiKey.trim() : "";
+    public List<IdeaSettings.CustomAiProviderConfig> getCustomAiProviders() {
+        if (currentAiProviderIndex >= 0 && currentAiProviderIndex < customAiProviders.size()) {
+            IdeaSettings.CustomAiProviderConfig config = customAiProviders.get(currentAiProviderIndex);
+            config.setName(aiProviderNameField.getText().trim());
+            config.setApiUrl(aiApiUrlField.getText().trim());
+            config.setApiKey(aiApiKeyField.getText().trim());
+            config.setModels(aiModelsField.getText().trim());
         }
-        return "";
+        return customAiProviders;
     }
 
     public String getBuildFlowPrompt() {
         return this.flowPromptTextArea.getText();
+    }
+
+    public List<IdeaSettings.PromptConfig> getFlowPrompts() {
+        // Ensure the current edited text is saved to the active prompt config
+        if (currentPromptIndex >= 0 && currentPromptIndex < promptConfigs.size()) {
+            promptConfigs.get(currentPromptIndex).setPrompt(flowPromptTextArea.getText());
+        }
+        return promptConfigs;
     }
 
 
