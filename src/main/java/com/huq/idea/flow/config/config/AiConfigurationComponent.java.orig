@@ -21,7 +21,7 @@ public class AiConfigurationComponent {
     private JTextArea flowPromptTextArea;
     private JTextArea relevantPatternsArea;
     private JTextArea excludedPatternsArea;
-    
+
     // 多AI模型API密钥配置
     private Map<String, JTextField> aiApiKeyFields = new HashMap<>();
     private JPanel aiConfigPanel;
@@ -32,7 +32,7 @@ public class AiConfigurationComponent {
     public void init(IdeaSettings.State state) {
         // 创建所有UI组件
         createUIComponents();
-        
+
         // 设置数据
         plantumlPathVal.setText(state.getPlantumlPathVal());
         flowPromptTextArea.setText(state.getBuildFlowPrompt());
@@ -58,64 +58,63 @@ public class AiConfigurationComponent {
     private void createUIComponents() {
         // 创建主面板
         mainPanel = new JPanel(new BorderLayout());
-        
+
         // 创建各个配置面板
         createGeneralConfigPanel();
         createAiConfigPanel();
         createPromptConfigPanel();
         createPatternConfigPanel();
-        
+
         // 组装主面板
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.add(generalConfigPanel, BorderLayout.NORTH);
         topPanel.add(aiConfigPanel, BorderLayout.CENTER);
-        
+
         JPanel bottomPanel = new JPanel(new BorderLayout());
         bottomPanel.add(promptConfigPanel, BorderLayout.NORTH);
         bottomPanel.add(patternConfigPanel, BorderLayout.CENTER);
-        
+
         mainPanel.add(topPanel, BorderLayout.NORTH);
         mainPanel.add(bottomPanel, BorderLayout.CENTER);
     }
-    
+
     /**
      * 创建通用配置面板
      */
     private void createGeneralConfigPanel() {
         generalConfigPanel = new JPanel(new GridBagLayout());
         generalConfigPanel.setBorder(new TitledBorder("基础配置"));
-        
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.anchor = GridBagConstraints.WEST;
-        
+
         // PlantUML路径配置
         gbc.gridx = 0;
         gbc.gridy = 0;
         JLabel plantumlLabel = new JLabel("PlantUML路径:");
         plantumlLabel.setPreferredSize(new Dimension(120, 25));
         generalConfigPanel.add(plantumlLabel, gbc);
-        
+
         gbc.gridx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
         plantumlPathVal = new JTextField(30);
-        plantumlLabel.setLabelFor(plantumlPathVal);
         plantumlPathVal.setToolTipText("请输入PlantUML的安装路径");
         generalConfigPanel.add(plantumlPathVal, gbc);
     }
-    
+
     /**
      * 创建AI配置面板
      */
     private void createAiConfigPanel() {
         aiConfigPanel = new JPanel(new GridBagLayout());
         aiConfigPanel.setBorder(new TitledBorder("AI模型API密钥配置"));
-        
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.anchor = GridBagConstraints.WEST;
-        
+
         // 添加说明文本
         JLabel instructionLabel = new JLabel("<html><body style='width: 500px'>" +
                 "<b>配置说明：</b><br/>" +
@@ -130,25 +129,25 @@ public class AiConfigurationComponent {
                 "&nbsp;&nbsp;- 阿里通义: <a href='https://dashscope.console.aliyun.com'>https://dashscope.console.aliyun.com</a><br/>" +
                 "&nbsp;&nbsp;- 智谱AI: <a href='https://open.bigmodel.cn'>https://open.bigmodel.cn</a>" +
                 "</body></html>");
-        
+
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         aiConfigPanel.add(instructionLabel, gbc);
-        
+
         // 添加分隔线
         gbc.gridy++;
         gbc.insets = new Insets(10, 5, 10, 5);
         aiConfigPanel.add(new JSeparator(), gbc);
-        
+
         // 为每个AI提供商创建输入框
         gbc.gridwidth = 1;
         gbc.insets = new Insets(5, 5, 5, 5);
-        
+
         for (AiUtils.AiProvider provider : AiUtils.AiProvider.values()) {
             gbc.gridy++;
-            
+
             // 标签
             String displayName = getProviderDisplayName(provider);
             JLabel label = new JLabel(displayName + ":");
@@ -156,13 +155,12 @@ public class AiConfigurationComponent {
             gbc.gridx = 0;
             gbc.fill = GridBagConstraints.NONE;
             aiConfigPanel.add(label, gbc);
-            
+
             // 输入框
             JTextField textField = new JTextField(30);
             textField.setToolTipText("请输入" + displayName + "的API密钥");
-            label.setLabelFor(textField);
             aiApiKeyFields.put(provider.name(), textField);
-            
+
             gbc.gridx = 1;
             gbc.fill = GridBagConstraints.HORIZONTAL;
             gbc.weightx = 1.0;
@@ -170,25 +168,25 @@ public class AiConfigurationComponent {
             gbc.weightx = 0;
         }
     }
-    
+
     /**
      * 创建提示词配置面板
      */
     private void createPromptConfigPanel() {
         promptConfigPanel = new JPanel(new GridBagLayout());
         promptConfigPanel.setBorder(new TitledBorder("提示词配置"));
-        
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.anchor = GridBagConstraints.WEST;
-        
+
         // 流程图提示词配置
         gbc.gridx = 0;
         gbc.gridy = 0;
         JLabel promptLabel = new JLabel("流程图生成提示词:");
         promptLabel.setPreferredSize(new Dimension(120, 25));
         promptConfigPanel.add(promptLabel, gbc);
-        
+
         gbc.gridx = 1;
         gbc.fill = GridBagConstraints.BOTH;
         gbc.weightx = 1.0;
@@ -197,30 +195,29 @@ public class AiConfigurationComponent {
         flowPromptTextArea.setToolTipText("自定义AI生成流程图的提示词");
         flowPromptTextArea.setLineWrap(true);
         flowPromptTextArea.setWrapStyleWord(true);
-        promptLabel.setLabelFor(flowPromptTextArea);
         JScrollPane promptScrollPane = new JScrollPane(flowPromptTextArea);
         promptScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         promptConfigPanel.add(promptScrollPane, gbc);
     }
-    
+
     /**
      * 创建模式配置面板
      */
     private void createPatternConfigPanel() {
         patternConfigPanel = new JPanel(new GridBagLayout());
         patternConfigPanel.setBorder(new TitledBorder("类匹配模式配置"));
-        
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.anchor = GridBagConstraints.WEST;
-        
+
         // 相关类模式
         gbc.gridx = 0;
         gbc.gridy = 0;
         JLabel relevantLabel = new JLabel("相关类模式:");
         relevantLabel.setPreferredSize(new Dimension(120, 25));
         patternConfigPanel.add(relevantLabel, gbc);
-        
+
         gbc.gridx = 1;
         gbc.fill = GridBagConstraints.BOTH;
         gbc.weightx = 1.0;
@@ -229,18 +226,17 @@ public class AiConfigurationComponent {
         relevantPatternsArea.setToolTipText("匹配相关类的正则表达式模式，每行一个");
         relevantPatternsArea.setLineWrap(true);
         relevantPatternsArea.setWrapStyleWord(true);
-        relevantLabel.setLabelFor(relevantPatternsArea);
         JScrollPane relevantScrollPane = new JScrollPane(relevantPatternsArea);
         relevantScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         patternConfigPanel.add(relevantScrollPane, gbc);
-        
+
         // 排除类模式
         gbc.gridy++;
         gbc.gridx = 0;
         JLabel excludedLabel = new JLabel("排除类模式:");
         excludedLabel.setPreferredSize(new Dimension(120, 25));
         patternConfigPanel.add(excludedLabel, gbc);
-        
+
         gbc.gridx = 1;
         gbc.fill = GridBagConstraints.BOTH;
         gbc.weightx = 1.0;
@@ -249,12 +245,11 @@ public class AiConfigurationComponent {
         excludedPatternsArea.setToolTipText("排除类的正则表达式模式，每行一个");
         excludedPatternsArea.setLineWrap(true);
         excludedPatternsArea.setWrapStyleWord(true);
-        excludedLabel.setLabelFor(excludedPatternsArea);
         JScrollPane excludedScrollPane = new JScrollPane(excludedPatternsArea);
         excludedScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         patternConfigPanel.add(excludedScrollPane, gbc);
     }
-    
+
     /**
      * 获取AI提供商的显示名称
      */
@@ -291,21 +286,21 @@ public class AiConfigurationComponent {
     public JPanel getjPanel() {
         return mainPanel;
     }
-    
+
     /**
      * 获取主面板（新方法名）
      */
     public JPanel getMainPanel() {
         return mainPanel;
     }
-    
+
     /**
      * 获取AI配置面板
      */
     public JPanel getAiConfigPanel() {
         return aiConfigPanel;
     }
-    
+
     /**
      * 获取所有AI提供商的API密钥配置
      * @return API密钥配置Map
@@ -321,7 +316,7 @@ public class AiConfigurationComponent {
         }
         return apiKeys;
     }
-    
+
     /**
      * 获取指定AI提供商的API密钥
      * @param provider AI提供商名称

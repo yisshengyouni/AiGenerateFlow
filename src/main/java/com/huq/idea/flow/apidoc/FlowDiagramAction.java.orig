@@ -176,9 +176,7 @@ public class FlowDiagramAction extends AnAction implements DumbAware {
         JLabel modelLabel = new JLabel("AI模型:");
         java.util.List<AiUtils.AiProvider> availableProviders = AiUtils.getAvailableProviders();
         JComboBox<AiUtils.AiProvider> modelComboBox = new JComboBox<>(availableProviders.toArray(new AiUtils.AiProvider[0]));
-        modelLabel.setLabelFor(modelComboBox);
-        modelComboBox.setToolTipText("选择用于生成流程图的AI模型");
-        
+
         // 设置默认选择
         if (!availableProviders.isEmpty()) {
             modelComboBox.setSelectedItem(availableProviders.get(0));
@@ -244,7 +242,7 @@ public class FlowDiagramAction extends AnAction implements DumbAware {
                     // 生成PlantUML流程图
                     String flowPromptTemplate = getFlowDiagramPrompt();
                     String flowPrompt = String.format(flowPromptTemplate, collectedCode);
-                    
+
                     // 使用选择的AI模型调用（自动获取API密钥）
                     AiUtils.AiConfig config = AiUtils.createConfigWithApiKey(selectedProvider);
                     if (config == null) {
@@ -259,11 +257,11 @@ public class FlowDiagramAction extends AnAction implements DumbAware {
                         });
                         return;
                     }
-                    
+
                     config.setSystemMessage("你是一个专业的PlantUML流程图生成专家，擅长分析Java代码并生成高质量的流程图。")
                           .setTemperature(0.7)
                           .setMaxTokens(8000);
-                    
+
                     AiUtils.AiResponse response = AiUtils.callAi(flowPrompt, config);
                     String flowDiagram = response.isSuccess() ? response.getContent() : null;
 
@@ -297,7 +295,7 @@ public class FlowDiagramAction extends AnAction implements DumbAware {
                             if (response != null && !response.isSuccess() && response.getErrorMessage() != null) {
                                 errorMsg = "生成流程图失败: " + response.getErrorMessage();
                             }
-                            
+
                             Notifications.Bus.notify(new Notification(
                                     "com.yt.huq.idea",
                                     "流程图生成",

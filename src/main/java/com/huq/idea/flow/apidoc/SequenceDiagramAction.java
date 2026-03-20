@@ -176,6 +176,8 @@ public class SequenceDiagramAction extends AnAction implements DumbAware {
         JLabel modelLabel = new JLabel("AI模型:");
         java.util.List<AiUtils.AiProvider> availableProviders = AiUtils.getAvailableProviders();
         JComboBox<AiUtils.AiProvider> modelComboBox = new JComboBox<>(availableProviders.toArray(new AiUtils.AiProvider[0]));
+        modelLabel.setLabelFor(modelComboBox);
+        modelComboBox.setToolTipText("选择用于生成时序图的AI模型");
         
         // 设置默认选择
         if (!availableProviders.isEmpty()) {

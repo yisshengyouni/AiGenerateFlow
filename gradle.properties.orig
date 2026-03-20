@@ -9,5 +9,5 @@ org.gradle.caching = true
 
 org.gradle.unsafe.configuration-cache=false
 
-#org.gradle.java.home=C:\\Program Files\\JetBrains\\IntelliJ IDEA 2025.3.2\\jbr
-#idea.home=C:\\Program Files\\JetBrains\\IntelliJ IDEA 2025.3.2
+org.gradle.java.home=C:\\Program Files\\JetBrains\\IntelliJ IDEA 2025.3.2\\jbr
+idea.home=C:\\Program Files\\JetBrains\\IntelliJ IDEA 2025.3.2
