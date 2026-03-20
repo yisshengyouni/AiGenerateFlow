@@ -48,16 +48,16 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
             "### 正确定义条件语句：\n" +
             "if (条件?) then (是)\n" +
             "  -[#连接器颜色]-> \n" +
-            " #节点背景色 :活动节点; \n" +
+            " :活动节点;<<#节点背景色>> \n" +
             "elseif (条件?) then (是)\n" +
             "  -[#连接器颜色]-> \n" +
-            " #节点背景色 :活动节点; \n" +
+            " :活动节点;<<#节点背景色>> \n" +
             "else (否)\n" +
-            " #节点背景色 :活动节点; \n" +
+            " :活动节点;<<#节点背景色>> \n" +
             "endif\n" +
             "### 正确使用颜色：\n" +
             "partition { 内容 }  #分区颜色\n" +
-            "#节点背景色 :活动节点; \n" +
+            ":活动节点; <<#节点背景色>> \n" +
             "@enduml\n" +
             "\n" +
             "### 错误预防清单\n" +
