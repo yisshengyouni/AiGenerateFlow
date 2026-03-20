@@ -136,13 +136,16 @@ public class PlantUmlRenderer {
         try {
             // 创建临时目录
             tempDir = FileUtil.createTempDirectory("plantuml_", "_temp", true);
+            tempDir.deleteOnExit();
 
             // 创建临时PlantUML文件
             pumlFile = new File(tempDir, "diagram.puml");
+            pumlFile.deleteOnExit();
             Files.writeString(pumlFile.toPath(), plantUmlCode, StandardCharsets.UTF_8);
 
             // 输出PNG文件路径
             pngFile = new File(tempDir, "diagram.png");
+            pngFile.deleteOnExit();
 
             // 构建命令
             ProcessBuilder processBuilder = new ProcessBuilder(
@@ -219,13 +222,16 @@ public class PlantUmlRenderer {
         try {
             // 创建临时目录
             tempDir = FileUtil.createTempDirectory("plantuml_", "_temp", true);
+            tempDir.deleteOnExit();
 
             // 创建临时PlantUML文件
             pumlFile = new File(tempDir, "diagram.puml");
+            pumlFile.deleteOnExit();
             Files.writeString(pumlFile.toPath(), plantUmlCode, StandardCharsets.UTF_8);
 
             // 输出SVG文件路径
             svgFile = new File(tempDir, "diagram.svg");
+            svgFile.deleteOnExit();
 
             // 构建命令
             ProcessBuilder processBuilder = new ProcessBuilder(
