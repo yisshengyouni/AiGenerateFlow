@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.regex.Pattern;
 
 /**
  * @author huqiang
@@ -24,6 +25,10 @@ public class CallStack {
     private boolean recursive;
 
     private int currentOffset;
+
+    // Regex patterns for cleaning JavaDoc comments
+    private static final Pattern JAVADOC_CLEAN_PATTERN = Pattern.compile("/\\*\\*|\\*/|\\*");
+    private static final Pattern JAVADOC_TAG_PATTERN = Pattern.compile("@[a-zA-Z]+[^@]*");
 
     public CallStack() {}
 
@@ -355,10 +360,10 @@ public class CallStack {
         }
 
         // 移除JavaDoc标记
-        String cleaned = docComment.replaceAll("/\\*\\*|\\*/|\\*", "").trim();
+        String cleaned = JAVADOC_CLEAN_PATTERN.matcher(docComment).replaceAll("").trim();
 
         // 移除@标签及其内容
-        cleaned = cleaned.replaceAll("@[a-zA-Z]+[^@]*", "").trim();
+        cleaned = JAVADOC_TAG_PATTERN.matcher(cleaned).replaceAll("").trim();
 
         // 限制长度
         if (cleaned.length() > 100) {

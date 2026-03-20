@@ -24,6 +24,7 @@ import java.awt.event.MouseEvent;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * Utility class for rendering flow diagrams using JGraphX
@@ -40,6 +41,10 @@ public class JGraphXRenderer {
     private static final int NODE_HEIGHT = 40;
     // 节点间距
     private static final int NODE_SPACING = 60;
+
+    // Regex patterns for cleaning JavaDoc comments
+    private static final Pattern JAVADOC_CLEAN_PATTERN = Pattern.compile("/\\*\\*|\\*/|\\*");
+    private static final Pattern JAVADOC_TAG_PATTERN = Pattern.compile("@[a-zA-Z]+[^@]*");
 
     /**
      * 创建一个显示JGraphX流程图的组件（从CallStack数据）
@@ -329,8 +334,8 @@ public class JGraphXRenderer {
         String docComment = methodDesc.getDocComment() != null ? methodDesc.getDocComment().getText() : "";
         if (docComment != null && !docComment.isEmpty()) {
             // 清理JavaDoc注释
-            docComment = docComment.replaceAll("/\\*\\*|\\*/|\\*", "").trim();
-            docComment = docComment.replaceAll("@[a-zA-Z]+[^@]*", "").trim();
+            docComment = JAVADOC_CLEAN_PATTERN.matcher(docComment).replaceAll("").trim();
+            docComment = JAVADOC_TAG_PATTERN.matcher(docComment).replaceAll("").trim();
 
             if (!docComment.isEmpty()) {
                 tooltip.append("<b>描述:</b> ").append(docComment).append("<br>");
