@@ -2,6 +2,7 @@ package com.huq.idea.flow.model;
 
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
+import com.intellij.openapi.diagnostic.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +14,8 @@ import java.util.List;
  * @since 2024/8/10
  */
 public class FlowGraphData {
+
+    private static final Logger LOG = Logger.getInstance(FlowGraphData.class);
 
     @SerializedName("nodes")
     private List<Node> nodes = new ArrayList<>();
@@ -44,7 +47,7 @@ public class FlowGraphData {
             Gson gson = new Gson();
             return gson.fromJson(json, FlowGraphData.class);
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.error(e);
             // 如果解析失败，返回一个空的数据对象
             return new FlowGraphData();
         }

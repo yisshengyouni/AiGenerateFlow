@@ -14,10 +14,13 @@ import com.github.javaparser.ast.stmt.WhileStmt;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.huq.idea.flow.model.CallStack;
 import com.huq.idea.flow.model.MethodDescription;
+import com.intellij.openapi.diagnostic.Logger;
 
 import java.util.Optional;
 
 public class PlanUMLUtil {
+
+    private static final Logger LOG = Logger.getInstance(PlanUMLUtil.class);
 
 
     public static String format(CallStack callStack) {
@@ -142,7 +145,7 @@ public class PlanUMLUtil {
             plantUML.append("stop\n");
             plantUML.append("@enduml");
         } catch (Exception ex) {
-            ex.printStackTrace();
+            LOG.error(ex);
         }
     }
 
@@ -241,10 +244,10 @@ public class PlanUMLUtil {
             }, null);
 
             // 打印 BlockStmt 的内容
-            System.out.println(blockStmt);
+            LOG.debug(blockStmt.toString());
             return blockStmt;
         } else {
-            System.err.println("Failed to parse code snippet" + parseResult.getProblems());
+            LOG.error("Failed to parse code snippet" + parseResult.getProblems());
         }
         return null;
     }
