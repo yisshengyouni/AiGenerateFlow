@@ -139,6 +139,7 @@ public class AiConfigurationComponent {
         gbc.weightx = 1.0;
         plantumlPathVal = new JTextField(30);
         plantumlPathVal.setToolTipText("请输入PlantUML的安装路径");
+        plantumlLabel.setLabelFor(plantumlPathVal);
         generalConfigPanel.add(plantumlPathVal, gbc);
     }
     
@@ -160,8 +161,12 @@ public class AiConfigurationComponent {
 
         // Buttons for provider list
         JPanel listButtonsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 2));
-        JButton addButton = new JButton("添加");
-        JButton removeButton = new JButton("删除");
+        JButton addButton = new JButton("添加(A)");
+        addButton.setMnemonic('A');
+        addButton.setToolTipText("添加新的AI提供商 (Alt+A)");
+        JButton removeButton = new JButton("删除(D)");
+        removeButton.setMnemonic('D');
+        removeButton.setToolTipText("删除选中的AI提供商 (Alt+D)");
         listButtonsPanel.add(addButton);
         listButtonsPanel.add(removeButton);
         leftPanel.add(listButtonsPanel, BorderLayout.SOUTH);
@@ -174,27 +179,35 @@ public class AiConfigurationComponent {
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0;
-        rightPanel.add(new JLabel("名称:"), gbc);
+        JLabel nameLabel = new JLabel("名称:");
+        rightPanel.add(nameLabel, gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         aiProviderNameField = new JTextField(30);
+        nameLabel.setLabelFor(aiProviderNameField);
         rightPanel.add(aiProviderNameField, gbc);
 
         gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0;
-        rightPanel.add(new JLabel("域名代理 (URL):"), gbc);
+        JLabel urlLabel = new JLabel("域名代理 (URL):");
+        rightPanel.add(urlLabel, gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         aiApiUrlField = new JTextField(30);
+        urlLabel.setLabelFor(aiApiUrlField);
         rightPanel.add(aiApiUrlField, gbc);
 
         gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0;
-        rightPanel.add(new JLabel("API Key:"), gbc);
+        JLabel apiKeyLabel = new JLabel("API Key:");
+        rightPanel.add(apiKeyLabel, gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         aiApiKeyField = new JTextField(30);
+        apiKeyLabel.setLabelFor(aiApiKeyField);
         rightPanel.add(aiApiKeyField, gbc);
 
         gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0;
-        rightPanel.add(new JLabel("可用模型 (逗号分隔):"), gbc);
+        JLabel modelsLabel = new JLabel("可用模型 (逗号分隔):");
+        rightPanel.add(modelsLabel, gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         aiModelsField = new JTextField(30);
+        modelsLabel.setLabelFor(aiModelsField);
         rightPanel.add(aiModelsField, gbc);
 
         // Spacer
@@ -327,9 +340,15 @@ public class AiConfigurationComponent {
 
         // Buttons for list
         JPanel listButtonsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 2));
-        JButton addButton = new JButton("添加");
-        JButton removeButton = new JButton("删除");
-        JButton renameButton = new JButton("重命名");
+        JButton addButton = new JButton("添加(A)");
+        addButton.setMnemonic('A');
+        addButton.setToolTipText("添加新的提示词配置 (Alt+A)");
+        JButton removeButton = new JButton("删除(D)");
+        removeButton.setMnemonic('D');
+        removeButton.setToolTipText("删除选中的提示词配置 (Alt+D)");
+        JButton renameButton = new JButton("重命名(R)");
+        renameButton.setMnemonic('R');
+        renameButton.setToolTipText("重命名选中的提示词配置 (Alt+R)");
 
         listButtonsPanel.add(addButton);
         listButtonsPanel.add(removeButton);
@@ -344,7 +363,9 @@ public class AiConfigurationComponent {
         flowPromptTextArea.setWrapStyleWord(true);
         JScrollPane promptScrollPane = new JScrollPane(flowPromptTextArea);
         promptScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        rightPanel.add(new JLabel("提示词内容:"), BorderLayout.NORTH);
+        JLabel promptContentLabel = new JLabel("提示词内容:");
+        promptContentLabel.setLabelFor(flowPromptTextArea);
+        rightPanel.add(promptContentLabel, BorderLayout.NORTH);
         rightPanel.add(promptScrollPane, BorderLayout.CENTER);
 
         // Create Split Pane
@@ -440,6 +461,7 @@ public class AiConfigurationComponent {
         gbc.weighty = 0.5;
         relevantPatternsArea = new JTextArea(3, 30);
         relevantPatternsArea.setToolTipText("匹配相关类的正则表达式模式，每行一个");
+        relevantLabel.setLabelFor(relevantPatternsArea);
         relevantPatternsArea.setLineWrap(true);
         relevantPatternsArea.setWrapStyleWord(true);
         JScrollPane relevantScrollPane = new JScrollPane(relevantPatternsArea);
@@ -459,6 +481,7 @@ public class AiConfigurationComponent {
         gbc.weighty = 0.5;
         excludedPatternsArea = new JTextArea(3, 30);
         excludedPatternsArea.setToolTipText("排除类的正则表达式模式，每行一个");
+        excludedLabel.setLabelFor(excludedPatternsArea);
         excludedPatternsArea.setLineWrap(true);
         excludedPatternsArea.setWrapStyleWord(true);
         JScrollPane excludedScrollPane = new JScrollPane(excludedPatternsArea);
