@@ -1,0 +1,3 @@
+## 2025-05-18 - Unassociated Swing JLabels and Missing Keyboard Mnemonics
+**Learning:** Found a recurring pattern in this Java Swing application where `JLabel` components are created anonymously and not programmatically associated with their corresponding input fields. This breaks screen-reader compatibility and diminishes keyboard navigation.
+**Action:** When working with Java Swing UIs, always store `JLabel` instances in variables, use `setLabelFor(Component)` to establish the relationship for screen readers, and implement `setMnemonic()` combined with tooltips to provide accessible keyboard shortcuts.

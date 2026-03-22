@@ -174,27 +174,43 @@ public class AiConfigurationComponent {
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0;
-        rightPanel.add(new JLabel("名称:"), gbc);
+        JLabel nameLabel = new JLabel("名称(N):");
+        nameLabel.setDisplayedMnemonic('N');
+        rightPanel.add(nameLabel, gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         aiProviderNameField = new JTextField(30);
+        nameLabel.setLabelFor(aiProviderNameField);
+        aiProviderNameField.setToolTipText("请输入AI提供商名称 (Alt+N)");
         rightPanel.add(aiProviderNameField, gbc);
 
         gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0;
-        rightPanel.add(new JLabel("域名代理 (URL):"), gbc);
+        JLabel urlLabel = new JLabel("域名代理 (URL)(U):");
+        urlLabel.setDisplayedMnemonic('U');
+        rightPanel.add(urlLabel, gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         aiApiUrlField = new JTextField(30);
+        urlLabel.setLabelFor(aiApiUrlField);
+        aiApiUrlField.setToolTipText("请输入API基础URL (Alt+U)");
         rightPanel.add(aiApiUrlField, gbc);
 
         gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0;
-        rightPanel.add(new JLabel("API Key:"), gbc);
+        JLabel apiKeyLabel = new JLabel("API Key(K):");
+        apiKeyLabel.setDisplayedMnemonic('K');
+        rightPanel.add(apiKeyLabel, gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         aiApiKeyField = new JTextField(30);
+        apiKeyLabel.setLabelFor(aiApiKeyField);
+        aiApiKeyField.setToolTipText("请输入您的API密钥 (Alt+K)");
         rightPanel.add(aiApiKeyField, gbc);
 
         gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0;
-        rightPanel.add(new JLabel("可用模型 (逗号分隔):"), gbc);
+        JLabel modelsLabel = new JLabel("可用模型 (逗号分隔)(M):");
+        modelsLabel.setDisplayedMnemonic('M');
+        rightPanel.add(modelsLabel, gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         aiModelsField = new JTextField(30);
+        modelsLabel.setLabelFor(aiModelsField);
+        aiModelsField.setToolTipText("请输入支持的模型，以逗号分隔 (Alt+M)");
         rightPanel.add(aiModelsField, gbc);
 
         // Spacer
