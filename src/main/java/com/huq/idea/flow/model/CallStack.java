@@ -23,6 +23,9 @@ public class CallStack {
     // 标记递归调用
     private boolean recursive;
 
+    // 标记是否为多态调用组（单接口多实现的并发分支）
+    private boolean multiImplementationGroup;
+
     private int currentOffset;
 
     public CallStack() {}
@@ -63,6 +66,14 @@ public class CallStack {
 
     public void setRecursive(boolean recursive) {
         this.recursive = recursive;
+    }
+
+    public boolean isMultiImplementationGroup() {
+        return multiImplementationGroup;
+    }
+
+    public void setMultiImplementationGroup(boolean multiImplementationGroup) {
+        this.multiImplementationGroup = multiImplementationGroup;
     }
 
     public Map<String, Object> getMetaData() {
@@ -216,6 +227,23 @@ public class CallStack {
      * 递归生成消息序列，并添加逻辑注释说明
      */
     private void appendMessages(StringBuilder uml, int indent) {
+        if (multiImplementationGroup) {
+            String indentStr = " ".repeat(indent * 4);
+            uml.append(indentStr).append("par 多实现并行调用\n");
+
+            boolean first = true;
+            for (CallStack child : children) {
+                if (!first) {
+                    uml.append(indentStr).append("else\n");
+                }
+                child.appendMessages(uml, indent + 1);
+                first = false;
+            }
+
+            uml.append(indentStr).append("end\n");
+            return;
+        }
+
         if (methodDescription != null) {
             String caller = (String) methodDescription.getAttr("caller", "");
             String target = methodDescription.getClassName();

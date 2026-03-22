@@ -268,14 +268,32 @@ public class MethodChainVisitor extends JavaRecursiveElementVisitor {
         if (MyPsiUtil.isAbstract(containingClass)) {
             psiMethod.accept(this);
             Query<PsiElement> search = DefinitionsScopedSearch.search(psiMethod).allowParallelProcessing();
+            java.util.List<PsiMethod> implementations = new java.util.ArrayList<>();
             for (PsiElement psiElement : search) {
                 if (psiElement instanceof PsiMethod) {
                     if (alreadyInStack((PsiMethod) psiElement)) {
                         continue;
                     }
-                    subMethodInterfaceMap.put((PsiMethod) psiElement, psiMethod);
-                    methodAccept(psiElement);
+                    implementations.add((PsiMethod) psiElement);
                 }
+            }
+            if (implementations.size() > 1) {
+                CallStack parentStack = currentStack;
+                MethodDescription methodDescription = createMethodDescription(psiMethod);
+                CallStack groupNode = new CallStack(methodDescription, currentStack);
+                groupNode.setMultiImplementationGroup(true);
+                currentStack.addChild(groupNode);
+
+                for (PsiMethod impl : implementations) {
+                    subMethodInterfaceMap.put(impl, psiMethod);
+                    currentStack = groupNode; // Temporary set current to group to ensure children are added to group
+                    methodAccept(impl);
+                }
+                currentStack = parentStack;
+            } else if (implementations.size() == 1) {
+                PsiMethod impl = implementations.get(0);
+                subMethodInterfaceMap.put(impl, psiMethod);
+                methodAccept(impl);
             }
         } else {
             methodAccept(psiMethod);
