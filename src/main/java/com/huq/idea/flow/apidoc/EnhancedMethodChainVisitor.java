@@ -130,35 +130,61 @@ public class EnhancedMethodChainVisitor extends JavaRecursiveElementVisitor {
             
             // Then find and visit all implementations
             Query<PsiElement> search = DefinitionsScopedSearch.search(method).allowParallelProcessing();
+
+            // Create a collection to hold valid implementation methods
+            java.util.List<PsiMethod> implementations = new java.util.ArrayList<>();
             for (PsiElement element : search) {
                 if (element instanceof PsiMethod) {
                     PsiMethod implMethod = (PsiMethod) element;
                     PsiClass implClass = implMethod.getContainingClass();
-                    
                     if (implClass != null) {
-                        LOG.info("Found implementation in: " + implClass.getQualifiedName());
-                        
-                        // Remember the relationship between interface and implementation
-                        interfaceToImplementationMap.put(implMethod, method);
-                        
-                        // Create a call stack for the implementation
-                        MethodDescription implDescription = createMethodDescription(implMethod);
-                        implDescription.put("implementation", "true");
-                        implDescription.put("implements", methodId);
-                        
-                        // Save current position in the call stack
-                        CallStack parentStack = currentStack;
-                        
-                        // Add implementation to the call stack
-                        currentStack = currentStack.methodCall(implDescription);
-                        
-                        // Visit the implementation method
-                        implMethod.accept(this);
-                        
-                        // Restore position in the call stack
-                        currentStack = parentStack;
+                        implementations.add(implMethod);
                     }
                 }
+            }
+
+            if (implementations.size() > 1) {
+                // If there are multiple implementations, wrap them in a multi-implementation group node
+                CallStack parentStack = currentStack;
+
+                // Create a virtual node for the par/else group
+                CallStack groupNode = new CallStack(methodDescription, currentStack);
+                groupNode.setMultiImplementationGroup(true);
+                currentStack.addChild(groupNode);
+
+                for (PsiMethod implMethod : implementations) {
+                    PsiClass implClass = implMethod.getContainingClass();
+                    LOG.info("Found multiple implementations, adding: " + implClass.getQualifiedName());
+
+                    interfaceToImplementationMap.put(implMethod, method);
+
+                    MethodDescription implDescription = createMethodDescription(implMethod);
+                    implDescription.put("implementation", "true");
+                    implDescription.put("implements", methodId);
+
+                    // Add implementation to the group node
+                    currentStack = groupNode.methodCall(implDescription);
+                    implMethod.accept(this);
+                }
+
+                // Restore original position
+                currentStack = parentStack;
+            } else if (implementations.size() == 1) {
+                // Single implementation, just add it directly
+                PsiMethod implMethod = implementations.get(0);
+                PsiClass implClass = implMethod.getContainingClass();
+                LOG.info("Found single implementation in: " + implClass.getQualifiedName());
+
+                interfaceToImplementationMap.put(implMethod, method);
+
+                MethodDescription implDescription = createMethodDescription(implMethod);
+                implDescription.put("implementation", "true");
+                implDescription.put("implements", methodId);
+
+                CallStack parentStack = currentStack;
+                currentStack = currentStack.methodCall(implDescription);
+                implMethod.accept(this);
+                currentStack = parentStack;
             }
         } else {
             // Regular class, just visit the method
