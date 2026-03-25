@@ -1,0 +1,3 @@
+## 2024-05-18 - Improve Java Swing Form Accessibility
+**Learning:** Swing forms often lack default accessibility bindings between labels and input fields. Screen readers may not be able to identify input fields without explicit associations. Additionally, keyboard navigation via mnemonics is critical for A11y.
+**Action:** When creating or modifying Java Swing UIs, enforce accessibility (A11y) and discoverability by always associating labels with input fields using `JLabel.setLabelFor(Component)`, assigning mnemonics for keyboard shortcuts using `setMnemonic()`, and adding shortcut hints to tooltips via `setToolTipText()`.
