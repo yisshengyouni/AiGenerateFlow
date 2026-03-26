@@ -4,12 +4,9 @@ import com.huq.idea.flow.config.config.IdeaSettings;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.util.io.FileUtil;
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -46,17 +43,17 @@ public class PlantUmlRenderer {
             // 在后台线程中渲染图像
             SwingWorker<ImageIcon, Void> worker = new SwingWorker<>() {
                 @Override
-                protected ImageIcon doInBackground() {
+                protected ImageIcon doInBackground() throws Exception {
                     try {
                         // 使用本地PlantUML渲染图像
                         byte[] imageData = renderPlantUmlToPng(plantUmlCode);
-                        if (imageData != null) {
-                            return new ImageIcon(imageData);
-                        }
-                        return null;
-                    } catch (Exception e) {
+                        return new ImageIcon(imageData);
+                    } catch (PlantUmlRenderException e) {
                         LOG.error("Failed to render PlantUML diagram", e);
-                        return null;
+                        throw e;
+                    } catch (Exception e) {
+                        LOG.error("Unexpected error during PlantUML rendering", e);
+                        throw new PlantUmlRenderException("渲染图表时发生意外错误: " + e.getMessage(), e);
                     }
                 }
 
@@ -71,19 +68,31 @@ public class PlantUmlRenderer {
                             scrollPane.setPreferredSize(new Dimension(800, 600));
 
                             // 替换加载标签
-                            panel.remove(loadingLabel);
+                            panel.removeAll();
                             panel.add(scrollPane, BorderLayout.CENTER);
                             panel.revalidate();
                             panel.repaint();
-                        } else {
-                            // 显示错误消息
-                            loadingLabel.setText("无法渲染图表。请检查PlantUML代码是否有效。");
-                            loadingLabel.setForeground(Color.RED);
                         }
                     } catch (Exception e) {
-                        LOG.error("Failed to display PlantUML diagram", e);
-                        loadingLabel.setText("渲染图表时出错: " + e.getMessage());
-                        loadingLabel.setForeground(Color.RED);
+                        Throwable cause = e;
+                        if (e instanceof java.util.concurrent.ExecutionException) {
+                            cause = e.getCause();
+                        }
+                        LOG.error("Failed to display PlantUML diagram", cause);
+                        String errorMsg = cause.getMessage();
+                        
+                        // 创建一个显示错误的文本域，以便显示多行错误信息
+                        JTextArea errorArea = new JTextArea("渲染图表失败:\n" + errorMsg);
+                        errorArea.setEditable(false);
+                        errorArea.setForeground(Color.RED);
+                        errorArea.setBackground(panel.getBackground());
+                        errorArea.setLineWrap(true);
+                        errorArea.setWrapStyleWord(true);
+                        
+                        panel.removeAll();
+                        panel.add(new JScrollPane(errorArea), BorderLayout.CENTER);
+                        panel.revalidate();
+                        panel.repaint();
                     }
                 }
             };
@@ -100,38 +109,28 @@ public class PlantUmlRenderer {
         return panel;
     }
 
-    /**
-     * 将PlantUML代码渲染为BufferedImage
-     *
-     * @param plantUmlCode PlantUML代码
-     * @return 渲染后的图像，如果渲染失败则返回null
-     */
-    public static BufferedImage renderPlantUmlToImage(String plantUmlCode) {
-        try {
-            byte[] pngData = renderPlantUmlToPng(plantUmlCode);
-            if (pngData == null) {
-                return null;
-            }
-
-            try (ByteArrayInputStream bis = new ByteArrayInputStream(pngData)) {
-                return ImageIO.read(bis);
-            }
-        } catch (Exception e) {
-            LOG.error("Failed to render PlantUML to image", e);
-            return null;
-        }
-    }
 
     /**
      * 将PlantUML代码渲染为PNG图像的字节数组
      *
      * @param plantUmlCode PlantUML代码
-     * @return 渲染后的PNG图像的字节数组，如果渲染失败则返回null
+     * @return 渲染后的PNG图像的字节数组
+     * @throws PlantUmlRenderException 如果渲染失败
      */
-    public static byte[] renderPlantUmlToPng(String plantUmlCode) {
+    public static byte[] renderPlantUmlToPng(String plantUmlCode) throws PlantUmlRenderException {
         File tempDir = null;
         File pumlFile = null;
         File pngFile = null;
+
+        String plantumlPath = IdeaSettings.getInstance().getState().getPlantumlPathVal();
+        if (plantumlPath == null || plantumlPath.trim().isEmpty()) {
+            throw new PlantUmlRenderException("未配置PlantUML Jar路径，请在设置中配置。");
+        }
+        
+        File jarFile = new File(plantumlPath);
+        if (!jarFile.exists()) {
+            throw new PlantUmlRenderException("找不到PlantUML Jar文件: " + plantumlPath + "\n请检查路径配置是否正确。");
+        }
 
         try {
             // 创建临时目录
@@ -150,10 +149,10 @@ public class PlantUmlRenderer {
             // 构建命令
             ProcessBuilder processBuilder = new ProcessBuilder(
                     "java",
-                    "-Djava.awt.headless=true ",
+                    "-Djava.awt.headless=true",
                     "-Dfile.encoding=UTF-8",        // 添加 JVM 编码设置
                     "-jar",
-                    IdeaSettings.getInstance().getState().getPlantumlPathVal(),
+                    plantumlPath,
                     "-charset",                      // 添加 PlantUML 编码参数
                     "UTF-8",
                     "-tpng",
@@ -166,45 +165,47 @@ public class PlantUmlRenderer {
             // 启动进程
             Process process = processBuilder.start();
 
-            // 等待进程完成
-            int exitCode = process.waitFor();
-
-            if (exitCode != 0) {
-                // 读取错误输出
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
-                    StringBuilder errorOutput = new StringBuilder();
+            // 在独立线程中读取错误输出和标准输出，避免缓冲区溢出导致挂起
+            StringBuilder errorOutput = new StringBuilder();
+            Thread errorReader = new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8))) {
                     String line;
                     while ((line = reader.readLine()) != null) {
                         errorOutput.append(line).append("\n");
                     }
-                    LOG.error("PlantUML process exited with code " + exitCode + ": " + errorOutput);
-                }
-                return null;
+                } catch (Exception ignored) {}
+            });
+            errorReader.start();
+
+            // 等待进程完成
+            int exitCode = process.waitFor();
+            errorReader.join(5000); // 等待错误读取完成
+
+            if (exitCode != 0) {
+                LOG.error("PlantUML process exited with code " + exitCode + ": " + errorOutput);
+                throw new PlantUmlRenderException("PlantUML 进程执行失败。", exitCode, errorOutput.toString());
             }
 
             // 检查PNG文件是否生成
             if (!pngFile.exists()) {
-                LOG.error("PNG file was not generated");
-                return null;
+                if (errorOutput.length() > 0) {
+                    throw new PlantUmlRenderException("未能生成 PNG 文件。", exitCode, errorOutput.toString());
+                } else {
+                    throw new PlantUmlRenderException("未能生成 PNG 文件，且没有错误输出。可能是因为代码包含语法错误或 PlantUML 无法启动。");
+                }
             }
 
             // 读取PNG文件
             return Files.readAllBytes(pngFile.toPath());
 
+        } catch (PlantUmlRenderException e) {
+            throw e;
         } catch (Exception e) {
             LOG.error("Failed to render PlantUML to PNG", e);
-            return null;
+            throw new PlantUmlRenderException("将 PlantUML 渲染为 PNG 时出错: " + e.getMessage(), e);
         } finally {
             // 清理临时文件
-            if (pumlFile != null && pumlFile.exists()) {
-                pumlFile.delete();
-            }
-            if (pngFile != null && pngFile.exists()) {
-                pngFile.delete();
-            }
-            if (tempDir != null && tempDir.exists()) {
-                tempDir.delete();
-            }
+            cleanup(pumlFile, pngFile, tempDir);
         }
     }
 
@@ -212,12 +213,18 @@ public class PlantUmlRenderer {
      * 将PlantUML代码渲染为SVG格式的字符串
      *
      * @param plantUmlCode PlantUML代码
-     * @return 渲染后的SVG字符串，如果渲染失败则返回null
+     * @return 渲染后的SVG字符串
+     * @throws PlantUmlRenderException 如果渲染失败
      */
-    public static String renderPlantUmlToSvg(String plantUmlCode) {
+    public static String renderPlantUmlToSvg(String plantUmlCode) throws PlantUmlRenderException {
         File tempDir = null;
         File pumlFile = null;
         File svgFile = null;
+
+        String plantumlPath = IdeaSettings.getInstance().getState().getPlantumlPathVal();
+        if (plantumlPath == null || plantumlPath.trim().isEmpty()) {
+            throw new PlantUmlRenderException("未配置PlantUML Jar路径。");
+        }
 
         try {
             // 创建临时目录
@@ -236,8 +243,11 @@ public class PlantUmlRenderer {
             // 构建命令
             ProcessBuilder processBuilder = new ProcessBuilder(
                     "java",
+                    "-Djava.awt.headless=true",
                     "-jar",
-                    IdeaSettings.getInstance().getState().getPlantumlPathVal(),
+                    plantumlPath,
+                    "-charset",
+                    "UTF-8",
                     "-tsvg",
                     pumlFile.getAbsolutePath()
             );
@@ -247,46 +257,55 @@ public class PlantUmlRenderer {
 
             // 启动进程
             Process process = processBuilder.start();
-
-            // 等待进程完成
-            int exitCode = process.waitFor();
-
-            if (exitCode != 0) {
-                // 读取错误输出
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
-                    StringBuilder errorOutput = new StringBuilder();
+            
+            StringBuilder errorOutput = new StringBuilder();
+            Thread errorReader = new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8))) {
                     String line;
                     while ((line = reader.readLine()) != null) {
                         errorOutput.append(line).append("\n");
                     }
-                    LOG.error("PlantUML process exited with code " + exitCode + ": " + errorOutput);
-                }
-                return null;
+                } catch (Exception ignored) {}
+            });
+            errorReader.start();
+
+            // 等待进程完成
+            int exitCode = process.waitFor();
+            errorReader.join(5000);
+
+            if (exitCode != 0) {
+                LOG.error("PlantUML process exited with code " + exitCode + ": " + errorOutput);
+                throw new PlantUmlRenderException("PlantUML 进程执行失败 (SVG)。", exitCode, errorOutput.toString());
             }
 
             // 检查SVG文件是否生成
             if (!svgFile.exists()) {
-                LOG.error("SVG file was not generated");
-                return null;
+                throw new PlantUmlRenderException("未能生成 SVG 文件。", exitCode, errorOutput.toString());
             }
 
             // 读取SVG文件
             return Files.readString(svgFile.toPath(), StandardCharsets.UTF_8);
 
+        } catch (PlantUmlRenderException e) {
+            throw e;
         } catch (Exception e) {
             LOG.error("Failed to render PlantUML to SVG", e);
-            return null;
+            throw new PlantUmlRenderException("将 PlantUML 渲染为 SVG 时出错: " + e.getMessage(), e);
         } finally {
             // 清理临时文件
-            if (pumlFile != null && pumlFile.exists()) {
-                pumlFile.delete();
-            }
-            if (svgFile != null && svgFile.exists()) {
-                svgFile.delete();
-            }
-            if (tempDir != null && tempDir.exists()) {
-                tempDir.delete();
-            }
+            cleanup(pumlFile, svgFile, tempDir);
+        }
+    }
+
+    private static void cleanup(File pumlFile, File outputFile, File tempDir) {
+        if (pumlFile != null && pumlFile.exists()) {
+            pumlFile.delete();
+        }
+        if (outputFile != null && outputFile.exists()) {
+            outputFile.delete();
+        }
+        if (tempDir != null && tempDir.exists()) {
+            tempDir.delete();
         }
     }
 }
