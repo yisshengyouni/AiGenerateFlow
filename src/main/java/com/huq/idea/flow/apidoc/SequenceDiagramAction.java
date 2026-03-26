@@ -6,6 +6,7 @@ import com.huq.idea.flow.model.CallStack;
 import com.huq.idea.flow.model.MethodDescription;
 import com.huq.idea.flow.util.AiUtils;
 import com.huq.idea.flow.util.MethodUtils;
+import com.huq.idea.flow.util.PlantUmlRenderException;
 import com.huq.idea.flow.util.PlantUmlRenderer;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationType;
@@ -417,14 +418,15 @@ public class SequenceDiagramAction extends AnAction implements DumbAware {
                                 "UML图像已保存到 " + fileToSave.getAbsolutePath(),
                                 NotificationType.INFORMATION),
                                 project);
-                    } else {
-                        Notifications.Bus.notify(new Notification(
-                                "com.yt.huq.idea",
-                                "UML图表",
-                                "渲染UML图像失败",
-                                NotificationType.ERROR),
-                                project);
                     }
+                } catch (PlantUmlRenderException ex) {
+                    LOG.error("Failed to render UML diagram", ex);
+                    Notifications.Bus.notify(new Notification(
+                            "com.yt.huq.idea",
+                            "UML图表",
+                            "渲染UML图像失败: " + ex.getMessage(),
+                            NotificationType.ERROR),
+                            project);
                 } catch (Exception ex) {
                     Notifications.Bus.notify(new Notification(
                             "com.yt.huq.idea",
