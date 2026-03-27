@@ -244,6 +244,15 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
                 "*Util", "*Utils", "*Helper"
         );
 
+        private List<String> classRelevantClassPatterns = Arrays.asList(
+                "*Impl", "*Service", "*Adapter", "*Api", "*Repository",
+                "*Mapper", "*Manager", "*Controller", "*DTO", "*VO", "*Entity", "*Model"
+        );
+
+        private List<String> classExcludedClassPatterns = Arrays.asList(
+                "*Util", "*Utils", "*Helper", "java.*", "javax.*"
+        );
+
         public List<String> getExcludedClassPatterns() {
             return this.excludedClassPatterns;
         }
@@ -258,6 +267,22 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
 
         public void setRelevantClassPatterns(List<String> relevantClassPatterns) {
             this.relevantClassPatterns = relevantClassPatterns;
+        }
+
+        public List<String> getClassRelevantClassPatterns() {
+            return this.classRelevantClassPatterns;
+        }
+
+        public void setClassRelevantClassPatterns(List<String> classRelevantClassPatterns) {
+            this.classRelevantClassPatterns = classRelevantClassPatterns;
+        }
+
+        public List<String> getClassExcludedClassPatterns() {
+            return this.classExcludedClassPatterns;
+        }
+
+        public void setClassExcludedClassPatterns(List<String> classExcludedClassPatterns) {
+            this.classExcludedClassPatterns = classExcludedClassPatterns;
         }
 
         public String getPlantumlPathVal() {

@@ -101,10 +101,12 @@ public class ClassDiagramAction extends AnAction {
 
         final PsiClass currentClass = targetClass;
 
+        IdeaSettings.State settings = IdeaSettings.getInstance().getState();
+
         // 收集关联的类
         Set<PsiClass> associatedClasses = ReadAction.compute(() -> {
             Set<PsiClass> classes = new HashSet<>();
-            collectAssociatedClasses(currentClass, classes, 0);
+            collectAssociatedClasses(currentClass, classes, 0, settings);
             return classes;
         });
 
@@ -116,7 +118,7 @@ public class ClassDiagramAction extends AnAction {
             showInitialDialog(project, collectedCode, currentClass.getName()));
     }
 
-    private void collectAssociatedClasses(PsiClass psiClass, Set<PsiClass> collected, int depth) {
+    private void collectAssociatedClasses(PsiClass psiClass, Set<PsiClass> collected, int depth, IdeaSettings.State settings) {
         if (psiClass == null || depth > 2 || collected.contains(psiClass)) {
             return;
         }
@@ -126,10 +128,21 @@ public class ClassDiagramAction extends AnAction {
             return;
         }
 
-        // 排除JDK自身的类
         String qualifiedName = psiClass.getQualifiedName();
-        if (qualifiedName != null && (qualifiedName.startsWith("java.") || qualifiedName.startsWith("javax."))) {
-            return;
+        if (qualifiedName != null) {
+            // Check if class matches any excluded pattern
+            boolean isExcludedClass = settings.getClassExcludedClassPatterns().stream()
+                    .anyMatch(pattern -> matchesWildcardPattern(qualifiedName, pattern));
+            if (isExcludedClass) {
+                return;
+            }
+
+            // Check if class matches any relevant pattern
+            boolean isRelevantClass = settings.getClassRelevantClassPatterns().stream()
+                    .anyMatch(pattern -> matchesWildcardPattern(qualifiedName, pattern));
+            if (!isRelevantClass) {
+                return;
+            }
         }
 
         collected.add(psiClass);
@@ -137,13 +150,13 @@ public class ClassDiagramAction extends AnAction {
         // 父类
         PsiClass superClass = psiClass.getSuperClass();
         if (superClass != null) {
-            collectAssociatedClasses(superClass, collected, depth + 1);
+            collectAssociatedClasses(superClass, collected, depth + 1, settings);
         }
 
         // 接口
         PsiClass[] interfaces = psiClass.getInterfaces();
         for (PsiClass intf : interfaces) {
-            collectAssociatedClasses(intf, collected, depth + 1);
+            collectAssociatedClasses(intf, collected, depth + 1, settings);
         }
 
         // 字段
@@ -151,7 +164,7 @@ public class ClassDiagramAction extends AnAction {
         for (PsiField field : fields) {
             PsiClass fieldClass = PsiUtil.resolveClassInClassTypeOnly(field.getType());
             if (fieldClass != null) {
-                collectAssociatedClasses(fieldClass, collected, depth + 1);
+                collectAssociatedClasses(fieldClass, collected, depth + 1, settings);
             }
         }
 
@@ -162,7 +175,7 @@ public class ClassDiagramAction extends AnAction {
             if (returnType != null) {
                 PsiClass returnClass = PsiUtil.resolveClassInClassTypeOnly(returnType);
                 if (returnClass != null) {
-                    collectAssociatedClasses(returnClass, collected, depth + 1);
+                    collectAssociatedClasses(returnClass, collected, depth + 1, settings);
                 }
             }
 
@@ -170,10 +183,23 @@ public class ClassDiagramAction extends AnAction {
             for (PsiParameter parameter : parameters) {
                 PsiClass paramClass = PsiUtil.resolveClassInClassTypeOnly(parameter.getType());
                 if (paramClass != null) {
-                    collectAssociatedClasses(paramClass, collected, depth + 1);
+                    collectAssociatedClasses(paramClass, collected, depth + 1, settings);
                 }
             }
         }
+    }
+
+    private boolean matchesWildcardPattern(String str, String wildcardPattern) {
+        if (str == null || wildcardPattern == null) {
+            return false;
+        }
+
+        // Convert wildcard pattern to regex pattern
+        String regexPattern = wildcardPattern
+                .replace(".", "\\.")  // Escape dots
+                .replace("*", ".*");  // Convert * to .*
+
+        return str.matches(regexPattern);
     }
 
     private String collectCodeFromClasses(Set<PsiClass> classes) {

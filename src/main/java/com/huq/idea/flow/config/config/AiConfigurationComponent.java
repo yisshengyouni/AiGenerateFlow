@@ -28,6 +28,8 @@ public class AiConfigurationComponent {
     private int currentPromptIndex = -1;
     private JTextArea relevantPatternsArea;
     private JTextArea excludedPatternsArea;
+    private JTextArea classRelevantPatternsArea;
+    private JTextArea classExcludedPatternsArea;
     
     // 多AI模型API密钥配置
     private Map<String, JTextField> aiApiKeyFields = new HashMap<>();
@@ -78,6 +80,9 @@ public class AiConfigurationComponent {
 
         relevantPatternsArea.setText(String.join("\n", state.getRelevantClassPatterns()));
         excludedPatternsArea.setText(String.join("\n", state.getExcludedClassPatterns()));
+
+        classRelevantPatternsArea.setText(String.join("\n", state.getClassRelevantClassPatterns()));
+        classExcludedPatternsArea.setText(String.join("\n", state.getClassExcludedClassPatterns()));
 
         aiProviderListModel.clear();
         for (IdeaSettings.CustomAiProviderConfig config : customAiProviders) {
@@ -427,18 +432,18 @@ public class AiConfigurationComponent {
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.anchor = GridBagConstraints.WEST;
         
-        // 相关类模式
+        // 流程图/时序图相关类模式
         gbc.gridx = 0;
         gbc.gridy = 0;
-        JLabel relevantLabel = new JLabel("相关类模式:");
-        relevantLabel.setPreferredSize(new Dimension(120, 25));
+        JLabel relevantLabel = new JLabel("流程图/时序图 - 相关类模式:");
+        relevantLabel.setPreferredSize(new Dimension(200, 25));
         patternConfigPanel.add(relevantLabel, gbc);
         
         gbc.gridx = 1;
         gbc.fill = GridBagConstraints.BOTH;
         gbc.weightx = 1.0;
-        gbc.weighty = 0.5;
-        relevantPatternsArea = new JTextArea(3, 30);
+        gbc.weighty = 0.25;
+        relevantPatternsArea = new JTextArea(2, 30);
         relevantPatternsArea.setToolTipText("匹配相关类的正则表达式模式，每行一个");
         relevantPatternsArea.setLineWrap(true);
         relevantPatternsArea.setWrapStyleWord(true);
@@ -446,24 +451,62 @@ public class AiConfigurationComponent {
         relevantScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         patternConfigPanel.add(relevantScrollPane, gbc);
         
-        // 排除类模式
+        // 流程图/时序图排除类模式
         gbc.gridy++;
         gbc.gridx = 0;
-        JLabel excludedLabel = new JLabel("排除类模式:");
-        excludedLabel.setPreferredSize(new Dimension(120, 25));
+        JLabel excludedLabel = new JLabel("流程图/时序图 - 排除类模式:");
+        excludedLabel.setPreferredSize(new Dimension(200, 25));
         patternConfigPanel.add(excludedLabel, gbc);
         
         gbc.gridx = 1;
         gbc.fill = GridBagConstraints.BOTH;
         gbc.weightx = 1.0;
-        gbc.weighty = 0.5;
-        excludedPatternsArea = new JTextArea(3, 30);
+        gbc.weighty = 0.25;
+        excludedPatternsArea = new JTextArea(2, 30);
         excludedPatternsArea.setToolTipText("排除类的正则表达式模式，每行一个");
         excludedPatternsArea.setLineWrap(true);
         excludedPatternsArea.setWrapStyleWord(true);
         JScrollPane excludedScrollPane = new JScrollPane(excludedPatternsArea);
         excludedScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         patternConfigPanel.add(excludedScrollPane, gbc);
+
+        // 类图相关类模式
+        gbc.gridy++;
+        gbc.gridx = 0;
+        JLabel classRelevantLabel = new JLabel("类图 - 相关类模式:");
+        classRelevantLabel.setPreferredSize(new Dimension(200, 25));
+        patternConfigPanel.add(classRelevantLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.weightx = 1.0;
+        gbc.weighty = 0.25;
+        classRelevantPatternsArea = new JTextArea(2, 30);
+        classRelevantPatternsArea.setToolTipText("类图中匹配相关类的正则表达式模式，每行一个");
+        classRelevantPatternsArea.setLineWrap(true);
+        classRelevantPatternsArea.setWrapStyleWord(true);
+        JScrollPane classRelevantScrollPane = new JScrollPane(classRelevantPatternsArea);
+        classRelevantScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        patternConfigPanel.add(classRelevantScrollPane, gbc);
+
+        // 类图排除类模式
+        gbc.gridy++;
+        gbc.gridx = 0;
+        JLabel classExcludedLabel = new JLabel("类图 - 排除类模式:");
+        classExcludedLabel.setPreferredSize(new Dimension(200, 25));
+        patternConfigPanel.add(classExcludedLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.weightx = 1.0;
+        gbc.weighty = 0.25;
+        classExcludedPatternsArea = new JTextArea(2, 30);
+        classExcludedPatternsArea.setToolTipText("类图中排除类的正则表达式模式，每行一个");
+        classExcludedPatternsArea.setLineWrap(true);
+        classExcludedPatternsArea.setWrapStyleWord(true);
+        JScrollPane classExcludedScrollPane = new JScrollPane(classExcludedPatternsArea);
+        classExcludedScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        patternConfigPanel.add(classExcludedScrollPane, gbc);
     }
     
 
@@ -474,6 +517,14 @@ public class AiConfigurationComponent {
 
     public List<String> getExcludedPatterns() {
         return Arrays.asList(excludedPatternsArea.getText().split("\n"));
+    }
+
+    public List<String> getClassRelevantPatterns() {
+        return Arrays.asList(classRelevantPatternsArea.getText().split("\n"));
+    }
+
+    public List<String> getClassExcludedPatterns() {
+        return Arrays.asList(classExcludedPatternsArea.getText().split("\n"));
     }
 
     public JTextArea getFlowPromptTextArea() {

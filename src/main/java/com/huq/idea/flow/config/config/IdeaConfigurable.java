@@ -50,5 +50,7 @@ public class IdeaConfigurable implements Configurable {
         state.setPlantumlPathVal(settingsComponent.getPlantumlPathValue());
         state.setRelevantClassPatterns(settingsComponent.getRelevantPatterns());
         state.setExcludedClassPatterns(settingsComponent.getExcludedPatterns());
+        state.setClassRelevantClassPatterns(settingsComponent.getClassRelevantPatterns());
+        state.setClassExcludedClassPatterns(settingsComponent.getClassExcludedPatterns());
     }
 }
