@@ -102,5 +102,12 @@
       <add-to-group group-id="GenerateGroup" anchor="last"/>
       <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
     </action>
+    <action id="com.huq.idea.flow.ClassDiagramAction"
+            class="com.huq.idea.flow.apidoc.ClassDiagramAction"
+            text="Generate Class Diagram"
+            description="Generates a class diagram from the class dependencies.">
+      <add-to-group group-id="GenerateGroup" anchor="last"/>
+      <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+    </action>
   </actions>
 </idea-plugin>
