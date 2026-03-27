@@ -122,6 +122,19 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
             "      `-->` 表示返回。\\n5. 如果代码中有循环或条件判断，请使用 `loop`、`alt`、`opt` 等UML片段来表示。\\n6. 在调用箭头上清晰地标出方法名和参数。\\n7. \n" +
             "      不要包含与代码无关的注释或解释。\\n\\n下面是需要分析的代码：\\n%s";
 
+    public static final String DEFAULT_CALL_CHAIN_ANALYSIS_PROMPT = "你是一位资深的Java架构师和代码审查专家。请对以下Java方法调用链相关的代码进行深度分析和总结。\n" +
+            "\n" +
+            "## 分析要求\n" +
+            "1. **核心逻辑梳理**：简明扼要地总结这段调用链的核心业务目的和执行流程。\n" +
+            "2. **关键技术点**：指出代码中使用的关键技术、设计模式或特殊的算法逻辑。\n" +
+            "3. **潜在风险评估**：分析可能存在的潜在问题，例如：性能瓶颈（如循环查库、大对象操作）、并发安全问题（线程安全、锁的使用）、异常处理是否完善、潜在的 NPE 等。\n" +
+            "4. **优化建议**：针对上述发现的问题，提供具体的代码优化建议或重构方向。\n" +
+            "5. **接口/依赖分析**：说明该调用链涉及的外部接口调用、数据库操作或其他重要依赖。\n" +
+            "\n" +
+            "请使用 Markdown 格式输出分析结果，结构清晰，重点突出。\n" +
+            "\n" +
+            "以下是需要分析的代码：\n%s";
+
     public static IdeaSettings getInstance() {
         return ApplicationManager.getApplication().getService(IdeaSettings.class);
     }
@@ -225,6 +238,7 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         private List<PromptConfig> flowPrompts;
         private String buildFlowJsonPrompt = DEFAULT_BUILD_FLOW_JSON_PROMPT;
         private String umlSequencePrompt = DEFAULT_UML_SEQUENCE_PROMPT;
+        private String callChainAnalysisPrompt = DEFAULT_CALL_CHAIN_ANALYSIS_PROMPT;
         private List<String> relevantClassPatterns = Arrays.asList(
                 "*Impl", "*Service", "*Adapter", "*Api", "*Repository",
                 "*Mapper", "*Manager", "*Controller"
@@ -304,6 +318,14 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
 
         public void setUmlSequencePrompt(String umlSequencePrompt) {
             this.umlSequencePrompt = umlSequencePrompt;
+        }
+
+        public String getCallChainAnalysisPrompt() {
+            return this.callChainAnalysisPrompt;
+        }
+
+        public void setCallChainAnalysisPrompt(String callChainAnalysisPrompt) {
+            this.callChainAnalysisPrompt = callChainAnalysisPrompt;
         }
 
         /**
