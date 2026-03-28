@@ -119,13 +119,25 @@ public class ClassDiagramAction extends AnAction {
     }
 
     private void collectAssociatedClasses(PsiClass psiClass, Set<PsiClass> collected, int depth, IdeaSettings.State settings) {
-        if (psiClass == null || depth > 2 || collected.contains(psiClass)) {
+        if (psiClass == null || depth > settings.getClassDiagramDepth() || collected.contains(psiClass)) {
             return;
         }
 
-        // 排除第三方jar包和class文件
-        if (MyPsiUtil.isInJarFileSystem(psiClass) || MyPsiUtil.isInClassFile(psiClass)) {
+        // 排除 compiled class files with no readable source or strictly jar file system
+        if (MyPsiUtil.isInClassFile(psiClass)) {
             return;
+        }
+
+        if (!settings.isIncludeLibrarySources() && MyPsiUtil.isInJarFileSystem(psiClass)) {
+            return;
+        }
+
+        // Additional safeguard for JDK classes even if includeLibrarySources is true
+        if (settings.isIncludeLibrarySources() && MyPsiUtil.isInJarFileSystem(psiClass)) {
+             String qName = psiClass.getQualifiedName();
+             if (qName != null && (qName.startsWith("java.") || qName.startsWith("javax.") || qName.startsWith("jdk."))) {
+                 return;
+             }
         }
 
         String qualifiedName = psiClass.getQualifiedName();
@@ -162,10 +174,7 @@ public class ClassDiagramAction extends AnAction {
         // 字段
         PsiField[] fields = psiClass.getFields();
         for (PsiField field : fields) {
-            PsiClass fieldClass = PsiUtil.resolveClassInClassTypeOnly(field.getType());
-            if (fieldClass != null) {
-                collectAssociatedClasses(fieldClass, collected, depth + 1, settings);
-            }
+            resolveAllClassesInType(field.getType(), collected, depth + 1, settings);
         }
 
         // 方法返回值和参数
@@ -173,18 +182,31 @@ public class ClassDiagramAction extends AnAction {
         for (PsiMethod method : methods) {
             PsiType returnType = method.getReturnType();
             if (returnType != null) {
-                PsiClass returnClass = PsiUtil.resolveClassInClassTypeOnly(returnType);
-                if (returnClass != null) {
-                    collectAssociatedClasses(returnClass, collected, depth + 1, settings);
-                }
+                resolveAllClassesInType(returnType, collected, depth + 1, settings);
             }
 
             PsiParameter[] parameters = method.getParameterList().getParameters();
             for (PsiParameter parameter : parameters) {
-                PsiClass paramClass = PsiUtil.resolveClassInClassTypeOnly(parameter.getType());
-                if (paramClass != null) {
-                    collectAssociatedClasses(paramClass, collected, depth + 1, settings);
-                }
+                resolveAllClassesInType(parameter.getType(), collected, depth + 1, settings);
+            }
+        }
+    }
+
+    private void resolveAllClassesInType(PsiType type, Set<PsiClass> collected, int depth, IdeaSettings.State settings) {
+        if (type == null) {
+            return;
+        }
+
+        if (type instanceof com.intellij.psi.PsiClassType) {
+            com.intellij.psi.PsiClassType classType = (com.intellij.psi.PsiClassType) type;
+            PsiClass resolvedClass = classType.resolve();
+            if (resolvedClass != null) {
+                collectAssociatedClasses(resolvedClass, collected, depth, settings);
+            }
+
+            PsiType[] parameters = classType.getParameters();
+            for (PsiType paramType : parameters) {
+                resolveAllClassesInType(paramType, collected, depth, settings);
             }
         }
     }

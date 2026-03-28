@@ -30,6 +30,8 @@ public class AiConfigurationComponent {
     private JTextArea excludedPatternsArea;
     private JTextArea classRelevantPatternsArea;
     private JTextArea classExcludedPatternsArea;
+    private JSpinner classDiagramDepthSpinner;
+    private JCheckBox includeLibrarySourcesCheckBox;
     
     // 多AI模型API密钥配置
     private Map<String, JTextField> aiApiKeyFields = new HashMap<>();
@@ -83,6 +85,8 @@ public class AiConfigurationComponent {
 
         classRelevantPatternsArea.setText(String.join("\n", state.getClassRelevantClassPatterns()));
         classExcludedPatternsArea.setText(String.join("\n", state.getClassExcludedClassPatterns()));
+        classDiagramDepthSpinner.setValue(state.getClassDiagramDepth());
+        includeLibrarySourcesCheckBox.setSelected(state.isIncludeLibrarySources());
 
         aiProviderListModel.clear();
         for (IdeaSettings.CustomAiProviderConfig config : customAiProviders) {
@@ -470,6 +474,35 @@ public class AiConfigurationComponent {
         excludedScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         patternConfigPanel.add(excludedScrollPane, gbc);
 
+        // 类图深度
+        gbc.gridy++;
+        gbc.gridx = 0;
+        JLabel depthLabel = new JLabel("类图 - 扫描深度:");
+        depthLabel.setPreferredSize(new Dimension(200, 25));
+        patternConfigPanel.add(depthLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        gbc.weighty = 0.0;
+        classDiagramDepthSpinner = new JSpinner(new SpinnerNumberModel(2, 1, 10, 1));
+        classDiagramDepthSpinner.setToolTipText("类图关联类扫描的深度(1-10)");
+        patternConfigPanel.add(classDiagramDepthSpinner, gbc);
+
+        // 包含库源码
+        gbc.gridy++;
+        gbc.gridx = 0;
+        JLabel includeLibraryLabel = new JLabel("类图 - 包含第三方源码:");
+        includeLibraryLabel.setPreferredSize(new Dimension(200, 25));
+        patternConfigPanel.add(includeLibraryLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        gbc.weighty = 0.0;
+        includeLibrarySourcesCheckBox = new JCheckBox("分析外部库或非项目源码 (仅限带有源码的类)");
+        patternConfigPanel.add(includeLibrarySourcesCheckBox, gbc);
+
         // 类图相关类模式
         gbc.gridy++;
         gbc.gridx = 0;
@@ -525,6 +558,14 @@ public class AiConfigurationComponent {
 
     public List<String> getClassExcludedPatterns() {
         return Arrays.asList(classExcludedPatternsArea.getText().split("\n"));
+    }
+
+    public int getClassDiagramDepth() {
+        return (Integer) classDiagramDepthSpinner.getValue();
+    }
+
+    public boolean isIncludeLibrarySources() {
+        return includeLibrarySourcesCheckBox.isSelected();
     }
 
     public JTextArea getFlowPromptTextArea() {

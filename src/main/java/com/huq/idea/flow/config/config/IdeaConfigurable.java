@@ -52,5 +52,7 @@ public class IdeaConfigurable implements Configurable {
         state.setExcludedClassPatterns(settingsComponent.getExcludedPatterns());
         state.setClassRelevantClassPatterns(settingsComponent.getClassRelevantPatterns());
         state.setClassExcludedClassPatterns(settingsComponent.getClassExcludedPatterns());
+        state.setClassDiagramDepth(settingsComponent.getClassDiagramDepth());
+        state.setIncludeLibrarySources(settingsComponent.isIncludeLibrarySources());
     }
 }

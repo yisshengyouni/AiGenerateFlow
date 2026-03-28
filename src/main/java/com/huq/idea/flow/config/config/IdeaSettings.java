@@ -253,6 +253,9 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
                 "*Util", "*Utils", "*Helper", "java.*", "javax.*"
         );
 
+        private int classDiagramDepth = 2;
+        private boolean includeLibrarySources = false;
+
         public List<String> getExcludedClassPatterns() {
             return this.excludedClassPatterns;
         }
@@ -283,6 +286,22 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
 
         public void setClassExcludedClassPatterns(List<String> classExcludedClassPatterns) {
             this.classExcludedClassPatterns = classExcludedClassPatterns;
+        }
+
+        public int getClassDiagramDepth() {
+            return classDiagramDepth;
+        }
+
+        public void setClassDiagramDepth(int classDiagramDepth) {
+            this.classDiagramDepth = classDiagramDepth;
+        }
+
+        public boolean isIncludeLibrarySources() {
+            return includeLibrarySources;
+        }
+
+        public void setIncludeLibrarySources(boolean includeLibrarySources) {
+            this.includeLibrarySources = includeLibrarySources;
         }
 
         public String getPlantumlPathVal() {
