@@ -103,19 +103,30 @@ public class ClassDiagramAction extends AnAction {
 
         IdeaSettings.State settings = IdeaSettings.getInstance().getState();
 
-        // 收集关联的类
-        Set<PsiClass> associatedClasses = ReadAction.compute(() -> {
-            Set<PsiClass> classes = new HashSet<>();
-            collectAssociatedClasses(currentClass, classes, 0, settings);
-            return classes;
-        });
+        // 在后台任务中执行耗时的扫描，避免冻结UI
+        new Task.Backgroundable(project, "扫描类关联", true, PerformInBackgroundOption.ALWAYS_BACKGROUND) {
+            @Override
+            public void run(@NotNull ProgressIndicator indicator) {
+                indicator.setIndeterminate(true);
+                indicator.setText("正在扫描关联类...");
 
-        // 收集代码
-        String collectedCode = ReadAction.compute(() -> collectCodeFromClasses(associatedClasses));
+                // 收集关联的类
+                Set<PsiClass> associatedClasses = ReadAction.compute(() -> {
+                    Set<PsiClass> classes = new HashSet<>();
+                    // The root class is always included, ignore the generic filter for depth 0
+                    collectAssociatedClasses(currentClass, classes, 0, settings);
+                    return classes;
+                });
 
-        // 显示初始对话框
-        SwingUtilities.invokeLater(() ->
-            showInitialDialog(project, collectedCode, currentClass.getName()));
+                indicator.setText("正在收集源码...");
+                // 收集代码
+                String collectedCode = ReadAction.compute(() -> collectCodeFromClasses(associatedClasses));
+
+                // 显示初始对话框
+                SwingUtilities.invokeLater(() ->
+                    showInitialDialog(project, collectedCode, currentClass.getName()));
+            }
+        }.queue();
     }
 
     private void collectAssociatedClasses(PsiClass psiClass, Set<PsiClass> collected, int depth, IdeaSettings.State settings) {
@@ -141,7 +152,8 @@ public class ClassDiagramAction extends AnAction {
         }
 
         String qualifiedName = psiClass.getQualifiedName();
-        if (qualifiedName != null) {
+        // Skip filtering for the root target class (depth == 0) so the diagram always generates the target
+        if (depth > 0 && qualifiedName != null) {
             // Check if class matches any excluded pattern
             boolean isExcludedClass = settings.getClassExcludedClassPatterns().stream()
                     .anyMatch(pattern -> matchesWildcardPattern(qualifiedName, pattern));

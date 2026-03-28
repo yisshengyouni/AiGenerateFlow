@@ -245,8 +245,7 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         );
 
         private List<String> classRelevantClassPatterns = Arrays.asList(
-                "*Impl", "*Service", "*Adapter", "*Api", "*Repository",
-                "*Mapper", "*Manager", "*Controller", "*DTO", "*VO", "*Entity", "*Model"
+                "*"
         );
 
         private List<String> classExcludedClassPatterns = Arrays.asList(

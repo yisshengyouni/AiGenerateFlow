@@ -54,5 +54,14 @@ public class IdeaConfigurable implements Configurable {
         state.setClassExcludedClassPatterns(settingsComponent.getClassExcludedPatterns());
         state.setClassDiagramDepth(settingsComponent.getClassDiagramDepth());
         state.setIncludeLibrarySources(settingsComponent.isIncludeLibrarySources());
+
+        // Ensure standard prompts map back correctly
+        for (IdeaSettings.PromptConfig config : state.getFlowPrompts()) {
+            if ("Class Diagram".equals(config.getName())) {
+                state.setClassDiagramPrompt(config.getPrompt());
+            } else if ("Sequence Diagram".equals(config.getName())) {
+                state.setUmlSequencePrompt(config.getPrompt());
+            }
+        }
     }
 }
