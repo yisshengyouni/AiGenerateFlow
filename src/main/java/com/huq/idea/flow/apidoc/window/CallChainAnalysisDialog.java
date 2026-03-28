@@ -4,6 +4,7 @@ import com.huq.idea.flow.config.config.IdeaSettings;
 import com.huq.idea.flow.model.CallStack;
 import com.huq.idea.flow.model.MethodDescription;
 import com.huq.idea.flow.util.AiUtils;
+import com.huq.idea.flow.apidoc.service.AgenticCallChainAnalyzer;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationType;
 import com.intellij.notification.Notifications;
@@ -14,6 +15,7 @@ import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
 
+import com.intellij.icons.AllIcons;
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
@@ -31,6 +33,7 @@ public class CallChainAnalysisDialog extends JFrame {
     private JComboBox<IdeaSettings.CustomAiProviderConfig> aiProviderCombo;
     private JComboBox<String> specificModelCombo;
     private JButton aiAnalysisButton;
+    private JButton agentAnalysisButton;
 
     public CallChainAnalysisDialog(Project project, CallStack callStack, String title) {
         this.project = project;
@@ -130,11 +133,69 @@ public class CallChainAnalysisDialog extends JFrame {
         panel.add(aiProviderCombo);
         panel.add(specificModelCombo);
 
-        aiAnalysisButton = new JButton("AI 深度分析");
+        aiAnalysisButton = new JButton("AI 静态分析 (当前视图)");
         aiAnalysisButton.addActionListener(e -> performAiAnalysis());
         panel.add(aiAnalysisButton);
 
+        agentAnalysisButton = new JButton("AI 智能探究 (Agent模式)");
+        agentAnalysisButton.setToolTipText("AI 将自动阅读入口代码并动态请求底层源码，直到完全理解业务逻辑。");
+        agentAnalysisButton.addActionListener(e -> performAgentAnalysis());
+        panel.add(agentAnalysisButton);
+
         return panel;
+    }
+
+    private void performAgentAnalysis() {
+        DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) callTree.getLastSelectedPathComponent();
+        CallStack stackToAnalyze;
+        if (selectedNode != null && selectedNode.getUserObject() instanceof CallStack) {
+            stackToAnalyze = (CallStack) selectedNode.getUserObject();
+        } else {
+            stackToAnalyze = rootStack;
+        }
+
+        MethodDescription desc = stackToAnalyze.getMethodDescription();
+        if (desc == null || desc.getText() == null || desc.getText().isEmpty()) {
+            Notifications.Bus.notify(new Notification(
+                    "com.yt.huq.idea",
+                    "分析失败",
+                    "无法获取所选节点的源代码。",
+                    NotificationType.ERROR),
+                    project);
+            return;
+        }
+
+        IdeaSettings.CustomAiProviderConfig selectedProvider = (IdeaSettings.CustomAiProviderConfig) aiProviderCombo.getSelectedItem();
+        String selectedModel = (String) specificModelCombo.getSelectedItem();
+
+        if (selectedProvider == null) {
+            Notifications.Bus.notify(new Notification("com.yt.huq.idea", "配置错误", "未选择AI提供商", NotificationType.ERROR), project);
+            return;
+        }
+
+        agentAnalysisButton.setEnabled(false);
+        aiAnalysisButton.setEnabled(false);
+        agentAnalysisButton.setText("Agent 探究中...");
+        aiResponseArea.setText("正在启动 AI Agent 探究模式...\n");
+
+        new Task.Backgroundable(project, "AI Agent 深度调用链分析", true, PerformInBackgroundOption.ALWAYS_BACKGROUND) {
+            @Override
+            public void run(@NotNull ProgressIndicator indicator) {
+                AgenticCallChainAnalyzer analyzer = new AgenticCallChainAnalyzer(project, selectedProvider, selectedModel, msg -> {
+                    SwingUtilities.invokeLater(() -> aiResponseArea.append(msg + "\n"));
+                });
+
+                String finalReport = analyzer.analyze(desc.getText(), indicator);
+
+                SwingUtilities.invokeLater(() -> {
+                    agentAnalysisButton.setEnabled(true);
+                    aiAnalysisButton.setEnabled(true);
+                    agentAnalysisButton.setText("AI 智能探究 (Agent模式)");
+                    aiResponseArea.setText(finalReport);
+                    aiResponseArea.setCaretPosition(0);
+                });
+            }
+        }.queue();
     }
 
     private void performAiAnalysis() {
@@ -275,33 +336,63 @@ public class CallChainAnalysisDialog extends JFrame {
             }
         });
 
-        // Custom Cell Renderer
+        // Custom Enhanced Cell Renderer
         callTree.setCellRenderer(new DefaultTreeCellRenderer() {
             @Override
             public Component getTreeCellRendererComponent(JTree tree, Object value,
                                                           boolean sel, boolean expanded, boolean leaf, int row, boolean hasFocus) {
                 super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
+
                 if (value instanceof DefaultMutableTreeNode) {
                     Object userObject = ((DefaultMutableTreeNode) value).getUserObject();
                     if (userObject instanceof CallStack) {
                         CallStack stack = (CallStack) userObject;
+
                         if (stack.isMultiImplementationGroup()) {
-                            setText("Par (多实现分支)");
-                            setForeground(Color.BLUE);
+                            setText("<html><b><font color='blue'>Par (多实现并行分支)</font></b></html>");
+                            setIcon(AllIcons.Nodes.Folder);
                         } else {
                             MethodDescription desc = stack.getMethodDescription();
                             if (desc != null) {
-                                String text = desc.getClassName() + "." + desc.getName();
-                                if (stack.isRecursive()) {
-                                    text += " [递归]";
-                                    setForeground(Color.RED);
-                                } else if ("true".equals(desc.getAttr("implementation"))) {
-                                    text += " [实现]";
-                                    setForeground(Color.DARK_GRAY);
+                                setIcon("true".equals(desc.getAttr("implementation")) ? AllIcons.Nodes.Interface : AllIcons.Nodes.Method);
+
+                                String className = desc.getSimpleClassName();
+                                String methodName = desc.getName();
+                                String params = desc.getAttr("parameters");
+                                String returnType = desc.getReturnType();
+
+                                StringBuilder html = new StringBuilder("<html>");
+                                html.append("<font color='gray'>").append(className).append(".</font>");
+                                html.append("<b>").append(methodName).append("</b>");
+
+                                if (params != null && !params.isEmpty()) {
+                                    html.append("(<font color='#007A33'>").append(params).append("</font>)");
                                 } else {
-                                    setForeground(sel ? getTextSelectionColor() : getTextNonSelectionColor());
+                                    html.append("()");
                                 }
-                                setText(text);
+
+                                if (returnType != null && !returnType.equals("void")) {
+                                    html.append(" : <font color='#A52A2A'>").append(returnType).append("</font>");
+                                }
+
+                                if (stack.isRecursive()) {
+                                    html.append(" <font color='red'><b>[递归]</b></font>");
+                                } else if ("true".equals(desc.getAttr("implementation"))) {
+                                    html.append(" <font color='gray'><i>[实现]</i></font>");
+                                }
+
+                                // Attempt to add a short comment summary if available
+                                String commentText = desc.getAttr("docCommentText");
+                                if (commentText != null && !commentText.isEmpty()) {
+                                    String comment = commentText.replaceAll("/\\*\\*|\\*/|\\*|\n|\r", "").trim();
+                                    if (!comment.isEmpty()) {
+                                        if (comment.length() > 30) comment = comment.substring(0, 27) + "...";
+                                        html.append(" <font color='#808080'>// ").append(comment).append("</font>");
+                                    }
+                                }
+
+                                html.append("</html>");
+                                setText(html.toString());
                             }
                         }
                     }
@@ -310,6 +401,8 @@ public class CallChainAnalysisDialog extends JFrame {
             }
         });
 
+        // Add some padding to the tree cells for better readability
+        callTree.setRowHeight(24);
         panel.add(new JScrollPane(callTree), BorderLayout.CENTER);
         return panel;
     }

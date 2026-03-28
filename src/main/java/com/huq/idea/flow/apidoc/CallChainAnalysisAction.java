@@ -83,10 +83,17 @@ public class CallChainAnalysisAction extends AnAction implements DumbAware {
             return methodChainVisitor.generateMethodChains(currentMethod, null);
         });
 
+        // 计算标题，必须在 ReadAction 中进行
+        String dialogTitle = ReadAction.compute(() -> {
+            if (currentMethod.getContainingClass() != null) {
+                return currentMethod.getContainingClass().getName() + "." + currentMethod.getName();
+            }
+            return currentMethod.getName();
+        });
+
         // 显示对话框
         SwingUtilities.invokeLater(() -> {
-            String title = currentMethod.getContainingClass().getName() + "." + currentMethod.getName();
-            CallChainAnalysisDialog dialog = new CallChainAnalysisDialog(project, callStack, title);
+            CallChainAnalysisDialog dialog = new CallChainAnalysisDialog(project, callStack, dialogTitle);
             dialog.setLocationRelativeTo(null);
             dialog.setVisible(true);
         });
