@@ -28,6 +28,10 @@ public class AiConfigurationComponent {
     private int currentPromptIndex = -1;
     private JTextArea relevantPatternsArea;
     private JTextArea excludedPatternsArea;
+    private JTextArea classRelevantPatternsArea;
+    private JTextArea classExcludedPatternsArea;
+    private JSpinner classDiagramDepthSpinner;
+    private JCheckBox includeLibrarySourcesCheckBox;
     
     // 多AI模型API密钥配置
     private Map<String, JTextField> aiApiKeyFields = new HashMap<>();
@@ -79,6 +83,11 @@ public class AiConfigurationComponent {
         relevantPatternsArea.setText(String.join("\n", state.getRelevantClassPatterns()));
         excludedPatternsArea.setText(String.join("\n", state.getExcludedClassPatterns()));
 
+        classRelevantPatternsArea.setText(String.join("\n", state.getClassRelevantClassPatterns()));
+        classExcludedPatternsArea.setText(String.join("\n", state.getClassExcludedClassPatterns()));
+        classDiagramDepthSpinner.setValue(state.getClassDiagramDepth());
+        includeLibrarySourcesCheckBox.setSelected(state.isIncludeLibrarySources());
+
         aiProviderListModel.clear();
         for (IdeaSettings.CustomAiProviderConfig config : customAiProviders) {
             aiProviderListModel.addElement(config.getName());
@@ -103,17 +112,29 @@ public class AiConfigurationComponent {
         createPromptConfigPanel();
         createPatternConfigPanel();
         
-        // 组装主面板
-        JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.add(generalConfigPanel, BorderLayout.NORTH);
-        topPanel.add(aiConfigPanel, BorderLayout.CENTER);
+        // 组装主面板，使用TabbedPane以提升UI可用性
+        com.intellij.ui.components.JBTabbedPane tabbedPane = new com.intellij.ui.components.JBTabbedPane();
+
+        // Tab 1: 基础与AI配置
+        JPanel generalAndAiPanel = new JPanel(new BorderLayout());
+        generalAndAiPanel.add(generalConfigPanel, BorderLayout.NORTH);
+        generalAndAiPanel.add(aiConfigPanel, BorderLayout.CENTER);
+        generalAndAiPanel.setBorder(com.intellij.util.ui.JBUI.Borders.empty(5));
+        tabbedPane.addTab("AI 模型配置", generalAndAiPanel);
         
-        JPanel bottomPanel = new JPanel(new BorderLayout());
-        bottomPanel.add(promptConfigPanel, BorderLayout.NORTH);
-        bottomPanel.add(patternConfigPanel, BorderLayout.CENTER);
+        // Tab 2: 提示词配置
+        JPanel promptPanel = new JPanel(new BorderLayout());
+        promptPanel.add(promptConfigPanel, BorderLayout.CENTER);
+        promptPanel.setBorder(com.intellij.util.ui.JBUI.Borders.empty(5));
+        tabbedPane.addTab("提示词", promptPanel);
         
-        mainPanel.add(topPanel, BorderLayout.NORTH);
-        mainPanel.add(bottomPanel, BorderLayout.CENTER);
+        // Tab 3: 匹配模式与规则
+        JPanel filterPanel = new JPanel(new BorderLayout());
+        filterPanel.add(patternConfigPanel, BorderLayout.CENTER);
+        filterPanel.setBorder(com.intellij.util.ui.JBUI.Borders.empty(5));
+        tabbedPane.addTab("过滤与扫描规则", filterPanel);
+
+        mainPanel.add(tabbedPane, BorderLayout.CENTER);
     }
     
     /**
@@ -167,39 +188,36 @@ public class AiConfigurationComponent {
         leftPanel.add(listButtonsPanel, BorderLayout.SOUTH);
 
         // Right Panel: Form for selected provider
-        JPanel rightPanel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        aiProviderNameField = new JTextField();
+        aiApiUrlField = new JTextField();
+        aiApiKeyField = new JPasswordField(); // Ensure security
+        aiModelsField = new JTextField();
 
-        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0;
-        rightPanel.add(new JLabel("名称:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
-        aiProviderNameField = new JTextField(30);
-        rightPanel.add(aiProviderNameField, gbc);
+        JLabel nameLabel = new JLabel("名称 (&N):");
+        nameLabel.setDisplayedMnemonic('N');
+        nameLabel.setLabelFor(aiProviderNameField);
 
-        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0;
-        rightPanel.add(new JLabel("域名代理 (URL):"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
-        aiApiUrlField = new JTextField(30);
-        rightPanel.add(aiApiUrlField, gbc);
+        JLabel urlLabel = new JLabel("域名代理 URL (&U):");
+        urlLabel.setDisplayedMnemonic('U');
+        urlLabel.setLabelFor(aiApiUrlField);
 
-        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0;
-        rightPanel.add(new JLabel("API Key:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
-        aiApiKeyField = new JTextField(30);
-        rightPanel.add(aiApiKeyField, gbc);
+        JLabel keyLabel = new JLabel("API Key (&K):");
+        keyLabel.setDisplayedMnemonic('K');
+        keyLabel.setLabelFor(aiApiKeyField);
 
-        gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0;
-        rightPanel.add(new JLabel("可用模型 (逗号分隔):"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
-        aiModelsField = new JTextField(30);
-        rightPanel.add(aiModelsField, gbc);
+        JLabel modelsLabel = new JLabel("可用模型 (&M):");
+        modelsLabel.setDisplayedMnemonic('M');
+        modelsLabel.setLabelFor(aiModelsField);
+        aiModelsField.setToolTipText("输入模型名称，多个模型使用英文逗号分隔");
 
-        // Spacer
-        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2; gbc.weighty = 1.0; gbc.fill = GridBagConstraints.BOTH;
-        rightPanel.add(new JPanel(), gbc);
+        JPanel rightPanel = com.intellij.util.ui.FormBuilder.createFormBuilder()
+                .addLabeledComponent(nameLabel, aiProviderNameField)
+                .addLabeledComponent(urlLabel, aiApiUrlField)
+                .addLabeledComponent(keyLabel, aiApiKeyField)
+                .addLabeledComponent(modelsLabel, aiModelsField)
+                .addComponentFillVertically(new JPanel(), 0)
+                .getPanel();
+        rightPanel.setBorder(com.intellij.util.ui.JBUI.Borders.empty(10));
 
         // Create Split Pane
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, rightPanel);
@@ -339,7 +357,7 @@ public class AiConfigurationComponent {
         // Right Panel: Text area for selected prompt
         JPanel rightPanel = new JPanel(new BorderLayout());
         flowPromptTextArea = new JTextArea(5, 30);
-        flowPromptTextArea.setToolTipText("自定义AI生成流程图的提示词");
+        flowPromptTextArea.setToolTipText("自定义AI生成流程图/类图/时序图的提示词");
         flowPromptTextArea.setLineWrap(true);
         flowPromptTextArea.setWrapStyleWord(true);
         JScrollPane promptScrollPane = new JScrollPane(flowPromptTextArea);
@@ -351,6 +369,16 @@ public class AiConfigurationComponent {
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, rightPanel);
         splitPane.setDividerLocation(200);
         promptConfigPanel.add(splitPane, BorderLayout.CENTER);
+
+        // Populate promptConfigs from standard places if missing Class/Sequence
+        if (promptConfigs.stream().noneMatch(c -> c.getName().equals("Class Diagram"))) {
+            promptConfigs.add(new IdeaSettings.PromptConfig("Class Diagram", IdeaSettings.getInstance().getState().getClassDiagramPrompt()));
+            promptListModel.addElement("Class Diagram");
+        }
+        if (promptConfigs.stream().noneMatch(c -> c.getName().equals("Sequence Diagram"))) {
+            promptConfigs.add(new IdeaSettings.PromptConfig("Sequence Diagram", IdeaSettings.getInstance().getState().getUmlSequencePrompt()));
+            promptListModel.addElement("Sequence Diagram");
+        }
 
         // Event Listeners
         promptList.addListSelectionListener(new ListSelectionListener() {
@@ -420,50 +448,77 @@ public class AiConfigurationComponent {
      * 创建模式配置面板
      */
     private void createPatternConfigPanel() {
-        patternConfigPanel = new JPanel(new GridBagLayout());
-        patternConfigPanel.setBorder(new TitledBorder("类匹配模式配置"));
-        
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.anchor = GridBagConstraints.WEST;
-        
-        // 相关类模式
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        JLabel relevantLabel = new JLabel("相关类模式:");
-        relevantLabel.setPreferredSize(new Dimension(120, 25));
-        patternConfigPanel.add(relevantLabel, gbc);
-        
-        gbc.gridx = 1;
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.weightx = 1.0;
-        gbc.weighty = 0.5;
-        relevantPatternsArea = new JTextArea(3, 30);
+        patternConfigPanel = new JPanel(new BorderLayout());
+        patternConfigPanel.setBorder(com.intellij.util.ui.JBUI.Borders.empty(10));
+
+        // 流程图/时序图相关类模式
+        relevantPatternsArea = new JTextArea(2, 30);
         relevantPatternsArea.setToolTipText("匹配相关类的正则表达式模式，每行一个");
         relevantPatternsArea.setLineWrap(true);
         relevantPatternsArea.setWrapStyleWord(true);
-        JScrollPane relevantScrollPane = new JScrollPane(relevantPatternsArea);
-        relevantScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        patternConfigPanel.add(relevantScrollPane, gbc);
-        
-        // 排除类模式
-        gbc.gridy++;
-        gbc.gridx = 0;
-        JLabel excludedLabel = new JLabel("排除类模式:");
-        excludedLabel.setPreferredSize(new Dimension(120, 25));
-        patternConfigPanel.add(excludedLabel, gbc);
-        
-        gbc.gridx = 1;
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.weightx = 1.0;
-        gbc.weighty = 0.5;
-        excludedPatternsArea = new JTextArea(3, 30);
+        JScrollPane relevantScrollPane = new com.intellij.ui.components.JBScrollPane(relevantPatternsArea);
+
+        JLabel relevantLabel = new JLabel("流程图/时序图 - 相关类模式 (&R):");
+        relevantLabel.setDisplayedMnemonic('R');
+        relevantLabel.setLabelFor(relevantPatternsArea);
+
+        // 流程图/时序图排除类模式
+        excludedPatternsArea = new JTextArea(2, 30);
         excludedPatternsArea.setToolTipText("排除类的正则表达式模式，每行一个");
         excludedPatternsArea.setLineWrap(true);
         excludedPatternsArea.setWrapStyleWord(true);
-        JScrollPane excludedScrollPane = new JScrollPane(excludedPatternsArea);
-        excludedScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        patternConfigPanel.add(excludedScrollPane, gbc);
+        JScrollPane excludedScrollPane = new com.intellij.ui.components.JBScrollPane(excludedPatternsArea);
+
+        JLabel excludedLabel = new JLabel("流程图/时序图 - 排除类模式 (&E):");
+        excludedLabel.setDisplayedMnemonic('E');
+        excludedLabel.setLabelFor(excludedPatternsArea);
+
+        // 类图深度
+        classDiagramDepthSpinner = new JSpinner(new SpinnerNumberModel(2, 1, 10, 1));
+        classDiagramDepthSpinner.setToolTipText("类图关联类扫描的深度(1-10)");
+        JLabel depthLabel = new JLabel("类图 - 扫描深度 (&D):");
+        depthLabel.setDisplayedMnemonic('D');
+        depthLabel.setLabelFor(classDiagramDepthSpinner);
+
+        // 包含库源码
+        includeLibrarySourcesCheckBox = new JCheckBox("分析外部库或非项目源码 (仅限带有源码的类)");
+        includeLibrarySourcesCheckBox.setMnemonic('S');
+        includeLibrarySourcesCheckBox.setToolTipText("勾选此项以在类图生成时深入解析第三方依赖库源码");
+
+        // 类图相关类模式
+        classRelevantPatternsArea = new JTextArea(2, 30);
+        classRelevantPatternsArea.setToolTipText("类图中匹配相关类的正则表达式模式，每行一个");
+        classRelevantPatternsArea.setLineWrap(true);
+        classRelevantPatternsArea.setWrapStyleWord(true);
+        JScrollPane classRelevantScrollPane = new com.intellij.ui.components.JBScrollPane(classRelevantPatternsArea);
+
+        JLabel classRelevantLabel = new JLabel("类图 - 相关类模式 (&C):");
+        classRelevantLabel.setDisplayedMnemonic('C');
+        classRelevantLabel.setLabelFor(classRelevantPatternsArea);
+
+        // 类图排除类模式
+        classExcludedPatternsArea = new JTextArea(2, 30);
+        classExcludedPatternsArea.setToolTipText("类图中排除类的正则表达式模式，每行一个");
+        classExcludedPatternsArea.setLineWrap(true);
+        classExcludedPatternsArea.setWrapStyleWord(true);
+        JScrollPane classExcludedScrollPane = new com.intellij.ui.components.JBScrollPane(classExcludedPatternsArea);
+
+        JLabel classExcludedLabel = new JLabel("类图 - 排除类模式 (&X):");
+        classExcludedLabel.setDisplayedMnemonic('X');
+        classExcludedLabel.setLabelFor(classExcludedPatternsArea);
+
+        JPanel innerForm = com.intellij.util.ui.FormBuilder.createFormBuilder()
+                .addLabeledComponent(relevantLabel, relevantScrollPane)
+                .addLabeledComponent(excludedLabel, excludedScrollPane)
+                .addSeparator(10)
+                .addLabeledComponent(depthLabel, classDiagramDepthSpinner)
+                .addComponentToRightColumn(includeLibrarySourcesCheckBox)
+                .addLabeledComponent(classRelevantLabel, classRelevantScrollPane)
+                .addLabeledComponent(classExcludedLabel, classExcludedScrollPane)
+                .addComponentFillVertically(new JPanel(), 0)
+                .getPanel();
+
+        patternConfigPanel.add(innerForm, BorderLayout.CENTER);
     }
     
 
@@ -474,6 +529,22 @@ public class AiConfigurationComponent {
 
     public List<String> getExcludedPatterns() {
         return Arrays.asList(excludedPatternsArea.getText().split("\n"));
+    }
+
+    public List<String> getClassRelevantPatterns() {
+        return Arrays.asList(classRelevantPatternsArea.getText().split("\n"));
+    }
+
+    public List<String> getClassExcludedPatterns() {
+        return Arrays.asList(classExcludedPatternsArea.getText().split("\n"));
+    }
+
+    public int getClassDiagramDepth() {
+        return (Integer) classDiagramDepthSpinner.getValue();
+    }
+
+    public boolean isIncludeLibrarySources() {
+        return includeLibrarySourcesCheckBox.isSelected();
     }
 
     public JTextArea getFlowPromptTextArea() {
