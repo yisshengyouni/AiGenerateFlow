@@ -219,7 +219,13 @@ public class EnhancedMethodChainVisitor extends JavaRecursiveElementVisitor {
         
         String returnType = method.getReturnType() != null ? method.getReturnType().getPresentableText() : "void";
         
-        return new MethodDescription(method, className, methodText, methodName, docComment, returnType);
+        MethodDescription methodDescription = new MethodDescription(method, className, methodText, methodName, docComment, returnType);
+
+        if (docComment != null) {
+            methodDescription.put("docCommentText", docComment.getText());
+        }
+
+        return methodDescription;
     }
 
     /**

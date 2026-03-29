@@ -122,14 +122,22 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
             "      `-->` 表示返回。\\n5. 如果代码中有循环或条件判断，请使用 `loop`、`alt`、`opt` 等UML片段来表示。\\n6. 在调用箭头上清晰地标出方法名和参数。\\n7. \n" +
             "      不要包含与代码无关的注释或解释。\\n\\n下面是需要分析的代码：\\n%s";
 
-    public static final String DEFAULT_CLASS_DIAGRAM_PROMPT = "你是一个UML类图生成专家。请基于下面提供的Java类相关的代码，生成一个PlantUML格式的UML类图。\n" +
-            "请遵循以下规则：\n" +
-            "1. 严格使用PlantUML语法。\n" +
-            "2. 以 `@startuml` 开始，以 `@enduml` 结束。\n" +
-            "3. 准确表示类之间的关系（继承、实现、组合、聚合、关联、依赖）。\n" +
-            "4. 包含类的主要属性和方法（可以省略Getter/Setter等无逻辑的方法）。\n" +
-            "5. 不要包含与代码无关的注释或解释。\n\n" +
-            "下面是需要分析的代码：\n%s";
+    public static final String DEFAULT_CALL_CHAIN_ANALYSIS_PROMPT = "你是一位资深的Java架构师和代码审查专家。这是代码调用链的一部分。\n" +
+            "你的任务是彻底理解这部分代码的业务逻辑。\n\n" +
+            "【行动指南】\n" +
+            "1. 如果你认为目前提供的代码片段不足以让你完全理解整个业务流程，你可以请求查看额外的方法源码或类结构（如实体类/配置类）。\n" +
+            "   - **请求格式：** 请严格返回一个 JSON 对象，包含 `methods` 数组和 `classes` 数组。例如：\n" +
+            "     `{\"methods\": [\"com.example.UserService.getUserById(java.lang.String)\", \"com.example.OrderMapper.insert(com.example.Order)\"], \"classes\": [\"com.example.UserDTO\"]}`\n" +
+            "   - **注意：** 方法签名必须包含完整的包名、类名、方法名以及参数类型，以便精准匹配重载方法。\n" +
+            "   - **注意：** 如果请求的是接口方法，系统会自动尝试寻找它的实现类。\n" +
+            "   - **除了这个 JSON 对象，不要输出任何多余的解释文字！**\n" +
+            "2. 如果你认为目前的上下文已经足够全面，或者你已经理解了核心逻辑，请开始写一份深度的 Markdown 分析报告，包含以下内容：\n" +
+            "   - **核心逻辑梳理**：简明扼要地总结这段调用链的核心业务目的和执行流程。\n" +
+            "   - **关键技术点**：指出代码中使用的关键技术、设计模式或特殊的算法逻辑。\n" +
+            "   - **潜在风险评估**：性能瓶颈、并发问题、异常处理缺失等。\n" +
+            "   - **优化建议**：提供具体的代码优化建议或重构方向。\n\n" +
+            "【注意】如果你返回了 JSON 对象，系统会自动去查找相应的源码或类结构，并追加在下一轮对话中发给你。请明智地决定是否还需要更多代码。\n\n" +
+            "【当前提供的代码】\n%s";
 
     public static IdeaSettings getInstance() {
         return ApplicationManager.getApplication().getService(IdeaSettings.class);
@@ -234,7 +242,7 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         private List<PromptConfig> flowPrompts;
         private String buildFlowJsonPrompt = DEFAULT_BUILD_FLOW_JSON_PROMPT;
         private String umlSequencePrompt = DEFAULT_UML_SEQUENCE_PROMPT;
-        private String classDiagramPrompt = DEFAULT_CLASS_DIAGRAM_PROMPT;
+        private String callChainAnalysisPrompt = DEFAULT_CALL_CHAIN_ANALYSIS_PROMPT;
         private List<String> relevantClassPatterns = Arrays.asList(
                 "*Impl", "*Service", "*Adapter", "*Api", "*Repository",
                 "*Mapper", "*Manager", "*Controller"
@@ -243,17 +251,6 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         private List<String> excludedClassPatterns = Arrays.asList(
                 "*Util", "*Utils", "*Helper"
         );
-
-        private List<String> classRelevantClassPatterns = Arrays.asList(
-                "*"
-        );
-
-        private List<String> classExcludedClassPatterns = Arrays.asList(
-                "*Util", "*Utils", "*Helper", "java.*", "javax.*"
-        );
-
-        private int classDiagramDepth = 2;
-        private boolean includeLibrarySources = false;
 
         public List<String> getExcludedClassPatterns() {
             return this.excludedClassPatterns;
@@ -269,38 +266,6 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
 
         public void setRelevantClassPatterns(List<String> relevantClassPatterns) {
             this.relevantClassPatterns = relevantClassPatterns;
-        }
-
-        public List<String> getClassRelevantClassPatterns() {
-            return this.classRelevantClassPatterns;
-        }
-
-        public void setClassRelevantClassPatterns(List<String> classRelevantClassPatterns) {
-            this.classRelevantClassPatterns = classRelevantClassPatterns;
-        }
-
-        public List<String> getClassExcludedClassPatterns() {
-            return this.classExcludedClassPatterns;
-        }
-
-        public void setClassExcludedClassPatterns(List<String> classExcludedClassPatterns) {
-            this.classExcludedClassPatterns = classExcludedClassPatterns;
-        }
-
-        public int getClassDiagramDepth() {
-            return classDiagramDepth;
-        }
-
-        public void setClassDiagramDepth(int classDiagramDepth) {
-            this.classDiagramDepth = classDiagramDepth;
-        }
-
-        public boolean isIncludeLibrarySources() {
-            return includeLibrarySources;
-        }
-
-        public void setIncludeLibrarySources(boolean includeLibrarySources) {
-            this.includeLibrarySources = includeLibrarySources;
         }
 
         public String getPlantumlPathVal() {
@@ -359,12 +324,12 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
             this.umlSequencePrompt = umlSequencePrompt;
         }
 
-        public String getClassDiagramPrompt() {
-            return this.classDiagramPrompt;
+        public String getCallChainAnalysisPrompt() {
+            return this.callChainAnalysisPrompt;
         }
 
-        public void setClassDiagramPrompt(String classDiagramPrompt) {
-            this.classDiagramPrompt = classDiagramPrompt;
+        public void setCallChainAnalysisPrompt(String callChainAnalysisPrompt) {
+            this.callChainAnalysisPrompt = callChainAnalysisPrompt;
         }
 
         /**
