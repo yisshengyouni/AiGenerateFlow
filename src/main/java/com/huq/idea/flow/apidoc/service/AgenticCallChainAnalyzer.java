@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.huq.idea.flow.config.config.IdeaSettings;
 import com.huq.idea.flow.util.AiUtils;
 import com.intellij.openapi.diagnostic.Logger;
@@ -34,13 +35,13 @@ public class AgenticCallChainAnalyzer {
     }
 
     public String analyze(String entryMethodCode, ProgressIndicator indicator) {
-        Set<String> requestedMethods = new HashSet<>();
+        Set<String> requestedItems = new HashSet<>();
         StringBuilder collectedCode = new StringBuilder();
 
         collectedCode.append("// === 入口方法代码 ===\n");
         collectedCode.append(entryMethodCode).append("\n\n");
 
-        String currentPrompt = String.format(IdeaSettings.getInstance().getState().getCallChainAnalysisPrompt(), collectedCode.toString());
+        String currentPrompt = IdeaSettings.getInstance().getState().getCallChainAnalysisPrompt().replace("%s", collectedCode.toString());
 
         for (int iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
             if (indicator != null && indicator.isCanceled()) {
@@ -61,57 +62,88 @@ public class AgenticCallChainAnalyzer {
 
             String aiOutput = response.getContent();
 
-            List<String> neededMethods = extractJsonMethodRequests(aiOutput);
+            AiRequest aiRequest = extractJsonRequests(aiOutput);
 
-            if (neededMethods.isEmpty() || iteration == MAX_ITERATIONS) {
+            if ((aiRequest.methods.isEmpty() && aiRequest.classes.isEmpty()) || iteration == MAX_ITERATIONS) {
                 statusCallback.accept("分析完成！");
                 return aiOutput;
             }
 
-            // We have requests for more methods
-            statusCallback.accept("AI 请求查看额外的 " + neededMethods.size() + " 个方法实现，正在查找...");
+            // We have requests for more code
+            statusCallback.accept("AI 请求查看额外的 " + aiRequest.methods.size() + " 个方法和 " + aiRequest.classes.size() + " 个类结构，正在查找...");
 
-            StringBuilder newMethodsCode = new StringBuilder();
-            for (String methodSignature : neededMethods) {
-                if (!requestedMethods.contains(methodSignature)) {
-                    requestedMethods.add(methodSignature);
-                    String sourceCode = PsiMethodResolver.resolveMethodSource(project, methodSignature);
+            StringBuilder newCodeContext = new StringBuilder();
+
+            // Process method requests
+            for (String methodSignature : aiRequest.methods) {
+                if (!requestedItems.contains(methodSignature)) {
+                    requestedItems.add(methodSignature);
+                    String sourceCode = PsiMethodResolver.resolveSource(project, methodSignature);
                     if (sourceCode != null) {
-                        newMethodsCode.append("// === 追加方法: ").append(methodSignature).append(" ===\n");
-                        newMethodsCode.append(sourceCode).append("\n\n");
+                        newCodeContext.append("// === 追加方法源码: ").append(methodSignature).append(" ===\n");
+                        newCodeContext.append(sourceCode).append("\n\n");
                     } else {
-                        newMethodsCode.append("// === 追加方法: ").append(methodSignature).append(" (未找到源码或非项目内代码) ===\n\n");
+                        newCodeContext.append("// === 追加方法源码: ").append(methodSignature).append(" (未找到源码或接口无实现) ===\n\n");
+                    }
+                }
+            }
+
+            // Process class requests
+            for (String className : aiRequest.classes) {
+                if (!requestedItems.contains(className)) {
+                    requestedItems.add(className);
+                    String classStructure = PsiMethodResolver.resolveClassSource(project, className);
+                    if (classStructure != null) {
+                        newCodeContext.append("// === 追加类结构: ").append(className).append(" ===\n");
+                        newCodeContext.append(classStructure).append("\n\n");
+                    } else {
+                        newCodeContext.append("// === 追加类结构: ").append(className).append(" (未找到该类) ===\n\n");
                     }
                 }
             }
 
             // Re-build prompt for next iteration
-            collectedCode.append(newMethodsCode);
-            currentPrompt = "这是你上一轮请求查看的方法代码，请结合上下文继续深度分析。如果你还需要更多代码，请继续以相同的 JSON 数组格式返回方法签名。如果不需要了，请直接输出最终的 Markdown 分析报告。\n\n" +
-                            "补充代码：\n" + newMethodsCode.toString() + "\n\n" +
+            collectedCode.append(newCodeContext);
+            currentPrompt = "这是你上一轮请求查看的方法源码和类结构，请结合上下文继续深度分析。如果你还需要更多代码或类结构，请继续以相同的 JSON 对象格式返回。如果不需要了，请直接输出最终的 Markdown 分析报告。\n\n" +
+                            "补充代码：\n" + newCodeContext.toString() + "\n\n" +
                             "之前的所有代码上下文：\n" + collectedCode.toString();
         }
 
         return "达到最大分析轮次限制。";
     }
 
-    private List<String> extractJsonMethodRequests(String aiOutput) {
+    private static class AiRequest {
         List<String> methods = new ArrayList<>();
-        // Try to find a JSON array in the text (often enclosed in ```json ... ``` or just raw text)
-        Pattern pattern = Pattern.compile("\\[\\s*\"([^\"]+)\"\\s*(?:,\\s*\"([^\"]+)\"\\s*)*\\]");
-        Matcher matcher = pattern.matcher(aiOutput);
+        List<String> classes = new ArrayList<>();
+    }
 
-        if (matcher.find()) {
-            String jsonStr = matcher.group(0);
-            try {
-                JsonArray jsonArray = new Gson().fromJson(jsonStr, JsonArray.class);
-                for (JsonElement element : jsonArray) {
-                    methods.add(element.getAsString());
+    private AiRequest extractJsonRequests(String aiOutput) {
+        AiRequest request = new AiRequest();
+        try {
+            // Find the JSON object block, it might be wrapped in markdown like ```json ... ```
+            int startIndex = aiOutput.indexOf('{');
+            int endIndex = aiOutput.lastIndexOf('}');
+
+            if (startIndex != -1 && endIndex != -1 && startIndex < endIndex) {
+                String jsonStr = aiOutput.substring(startIndex, endIndex + 1);
+                JsonObject jsonObject = JsonParser.parseString(jsonStr).getAsJsonObject();
+
+                if (jsonObject.has("methods")) {
+                    JsonArray methodsArray = jsonObject.getAsJsonArray("methods");
+                    for (JsonElement element : methodsArray) {
+                        request.methods.add(element.getAsString());
+                    }
                 }
-            } catch (Exception e) {
-                LOG.warn("Failed to parse JSON method requests from AI output: " + jsonStr, e);
+                if (jsonObject.has("classes")) {
+                    JsonArray classesArray = jsonObject.getAsJsonArray("classes");
+                    for (JsonElement element : classesArray) {
+                        request.classes.add(element.getAsString());
+                    }
+                }
             }
+        } catch (Exception e) {
+            LOG.warn("Failed to parse JSON requests from AI output.", e);
         }
-        return methods;
+        return request;
     }
 }
