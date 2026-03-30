@@ -109,5 +109,12 @@
       <add-to-group group-id="GenerateGroup" anchor="last"/>
       <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
     </action>
+    <action id="com.huq.idea.flow.StateDiagramAction"
+            class="com.huq.idea.flow.apidoc.StateDiagramAction"
+            text="Generate State Diagram"
+            description="Generates a state diagram from the class code.">
+      <add-to-group group-id="GenerateGroup" anchor="last"/>
+      <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+    </action>
   </actions>
 </idea-plugin>
