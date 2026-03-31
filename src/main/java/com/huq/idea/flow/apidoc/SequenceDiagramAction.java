@@ -439,6 +439,106 @@ public class SequenceDiagramAction extends AnAction implements DumbAware {
         });
         buttonPanel.add(saveImageButton);
 
+        // 保存SVG按钮
+        JButton saveSvgButton = new JButton("保存SVG");
+        saveSvgButton.addActionListener(e -> {
+            if (textArea.getText().trim().isEmpty() || !textArea.getText().contains("@startuml")) {
+                Notifications.Bus.notify(new Notification(
+                        "com.yt.huq.idea",
+                        "UML图表",
+                        "没有有效的UML图表可以保存",
+                        NotificationType.WARNING),
+                        project);
+                return;
+            }
+
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("保存UML SVG");
+            fileChooser.setSelectedFile(new java.io.File(parentFrame.getTitle().replaceAll("[^a-zA-Z0-9]", "_") + ".svg"));
+
+            int userSelection = fileChooser.showSaveDialog(parentFrame);
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
+                java.io.File fileToSave = fileChooser.getSelectedFile();
+                try {
+                    String svgData = PlantUmlRenderer.renderPlantUmlToSvg(textArea.getText());
+                    if (svgData != null) {
+                        java.io.FileWriter writer = new java.io.FileWriter(fileToSave);
+                        writer.write(svgData);
+                        writer.close();
+                        Notifications.Bus.notify(new Notification(
+                                "com.yt.huq.idea",
+                                "UML图表",
+                                "UML SVG已保存到 " + fileToSave.getAbsolutePath(),
+                                NotificationType.INFORMATION),
+                                project);
+                    }
+                } catch (PlantUmlRenderException ex) {
+                    LOG.error("Failed to render UML diagram as SVG", ex);
+                    Notifications.Bus.notify(new Notification(
+                            "com.yt.huq.idea",
+                            "UML图表",
+                            "渲染UML SVG失败: " + ex.getMessage(),
+                            NotificationType.ERROR),
+                            project);
+                } catch (Exception ex) {
+                    Notifications.Bus.notify(new Notification(
+                            "com.yt.huq.idea",
+                            "UML图表",
+                            "保存UML SVG失败: " + ex.getMessage(),
+                            NotificationType.ERROR),
+                            project);
+                }
+            }
+        });
+        buttonPanel.add(saveSvgButton);
+
+        // 导出Markdown按钮
+        JButton exportMarkdownButton = new JButton("导出Markdown");
+        exportMarkdownButton.addActionListener(e -> {
+            if (textArea.getText().trim().isEmpty() || !textArea.getText().contains("@startuml")) {
+                Notifications.Bus.notify(new Notification(
+                        "com.yt.huq.idea",
+                        "UML图表",
+                        "没有有效的UML图表可以导出",
+                        NotificationType.WARNING),
+                        project);
+                return;
+            }
+
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("导出Markdown");
+            fileChooser.setSelectedFile(new java.io.File(parentFrame.getTitle().replaceAll("[^a-zA-Z0-9]", "_") + ".md"));
+
+            int userSelection = fileChooser.showSaveDialog(parentFrame);
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
+                java.io.File fileToSave = fileChooser.getSelectedFile();
+                try {
+                    java.io.FileWriter writer = new java.io.FileWriter(fileToSave);
+                    writer.write("```plantuml\n");
+                    writer.write(textArea.getText());
+                    if (!textArea.getText().endsWith("\n")) {
+                        writer.write("\n");
+                    }
+                    writer.write("```\n");
+                    writer.close();
+                    Notifications.Bus.notify(new Notification(
+                            "com.yt.huq.idea",
+                            "UML图表",
+                            "Markdown已导出到 " + fileToSave.getAbsolutePath(),
+                            NotificationType.INFORMATION),
+                            project);
+                } catch (Exception ex) {
+                    Notifications.Bus.notify(new Notification(
+                            "com.yt.huq.idea",
+                            "UML图表",
+                            "导出Markdown失败: " + ex.getMessage(),
+                            NotificationType.ERROR),
+                            project);
+                }
+            }
+        });
+        buttonPanel.add(exportMarkdownButton);
+
         // 刷新图像按钮
         JButton refreshButton = new JButton("刷新图像");
         refreshButton.addActionListener(e -> {
