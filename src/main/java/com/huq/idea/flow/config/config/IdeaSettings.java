@@ -131,6 +131,16 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
             "5. 不要包含与代码无关的注释或解释。\n\n" +
             "下面是需要分析的代码：\n%s";
 
+    public static final String DEFAULT_STATE_DIAGRAM_PROMPT = "你是一个UML状态图生成专家。请基于下面提供的Java枚举或类相关的代码，生成一个PlantUML格式的UML状态图。\n" +
+            "请遵循以下规则：\n" +
+            "1. 严格使用PlantUML状态图语法。\n" +
+            "2. 以 `@startuml` 开始，以 `@enduml` 结束。\n" +
+            "3. 识别所有的状态节点，特别是代码中显式定义的常量、枚举值或状态字段。\n" +
+            "4. 如果方法中存在状态转换的逻辑，准确表示状态转换路径。\n" +
+            "5. 包含状态转移的条件或触发事件说明。\n" +
+            "6. 不要包含与代码无关的注释或解释。\n\n" +
+            "下面是需要分析的代码：\n%s";
+
     public static IdeaSettings getInstance() {
         return ApplicationManager.getApplication().getService(IdeaSettings.class);
     }
@@ -235,6 +245,7 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         private String buildFlowJsonPrompt = DEFAULT_BUILD_FLOW_JSON_PROMPT;
         private String umlSequencePrompt = DEFAULT_UML_SEQUENCE_PROMPT;
         private String classDiagramPrompt = DEFAULT_CLASS_DIAGRAM_PROMPT;
+        private String stateDiagramPrompt = DEFAULT_STATE_DIAGRAM_PROMPT;
         private List<String> relevantClassPatterns = Arrays.asList(
                 "*Impl", "*Service", "*Adapter", "*Api", "*Repository",
                 "*Mapper", "*Manager", "*Controller"
@@ -365,6 +376,14 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
 
         public void setClassDiagramPrompt(String classDiagramPrompt) {
             this.classDiagramPrompt = classDiagramPrompt;
+        }
+
+        public String getStateDiagramPrompt() {
+            return this.stateDiagramPrompt;
+        }
+
+        public void setStateDiagramPrompt(String stateDiagramPrompt) {
+            this.stateDiagramPrompt = stateDiagramPrompt;
         }
 
         /**
