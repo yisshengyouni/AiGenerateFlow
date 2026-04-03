@@ -63,6 +63,8 @@ public class IdeaConfigurable implements Configurable {
                 state.setUmlSequencePrompt(config.getPrompt());
             } else if ("State Diagram".equals(config.getName())) {
                 state.setStateDiagramPrompt(config.getPrompt());
+            } else if ("Explain Code".equals(config.getName())) {
+                state.setExplainCodePrompt(config.getPrompt());
             }
         }
     }
