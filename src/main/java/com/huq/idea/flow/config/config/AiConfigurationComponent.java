@@ -370,7 +370,7 @@ public class AiConfigurationComponent {
         splitPane.setDividerLocation(200);
         promptConfigPanel.add(splitPane, BorderLayout.CENTER);
 
-        // Populate promptConfigs from standard places if missing Class/Sequence
+        // Populate promptConfigs from standard places if missing Class/Sequence/State
         if (promptConfigs.stream().noneMatch(c -> c.getName().equals("Class Diagram"))) {
             promptConfigs.add(new IdeaSettings.PromptConfig("Class Diagram", IdeaSettings.getInstance().getState().getClassDiagramPrompt()));
             promptListModel.addElement("Class Diagram");
@@ -378,6 +378,14 @@ public class AiConfigurationComponent {
         if (promptConfigs.stream().noneMatch(c -> c.getName().equals("Sequence Diagram"))) {
             promptConfigs.add(new IdeaSettings.PromptConfig("Sequence Diagram", IdeaSettings.getInstance().getState().getUmlSequencePrompt()));
             promptListModel.addElement("Sequence Diagram");
+        }
+        if (promptConfigs.stream().noneMatch(c -> c.getName().equals("State Diagram"))) {
+            promptConfigs.add(new IdeaSettings.PromptConfig("State Diagram", IdeaSettings.getInstance().getState().getStateDiagramPrompt()));
+            promptListModel.addElement("State Diagram");
+        }
+        if (promptConfigs.stream().noneMatch(c -> c.getName().equals("Explain Code"))) {
+            promptConfigs.add(new IdeaSettings.PromptConfig("Explain Code", IdeaSettings.getInstance().getState().getExplainCodePrompt()));
+            promptListModel.addElement("Explain Code");
         }
 
         // Event Listeners
