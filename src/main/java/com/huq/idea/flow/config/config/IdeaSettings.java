@@ -140,6 +140,15 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
             "5. 不要包含与代码无关的注释或解释。\n\n" +
             "下面是需要分析的代码：\n%s";
 
+    public static final String DEFAULT_EXPLAIN_CODE_PROMPT = "你是一个高级Java开发专家和架构师。请分析下面提供的Java代码，并用自然语言给出一个详细、清晰的代码解释。\n" +
+            "请遵循以下规则：\n" +
+            "1. 首先用一两句话总结这个代码（方法或类）的主要目的和功能。\n" +
+            "2. 详细说明代码的执行逻辑，按照步骤解释主要处理流程。\n" +
+            "3. 指出代码中重要的边界条件、异常处理、或者潜在的风险点。\n" +
+            "4. 如果有设计模式的使用或性能上的考量，请简单说明。\n" +
+            "5. 语言需要专业、准确，并且排版清晰（可以使用Markdown格式，比如加粗、列表等）。\n\n" +
+            "下面是需要分析的代码：\n%s";
+
     public static IdeaSettings getInstance() {
         return ApplicationManager.getApplication().getService(IdeaSettings.class);
     }
@@ -245,6 +254,7 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         private String umlSequencePrompt = DEFAULT_UML_SEQUENCE_PROMPT;
         private String classDiagramPrompt = DEFAULT_CLASS_DIAGRAM_PROMPT;
         private String stateDiagramPrompt = DEFAULT_STATE_DIAGRAM_PROMPT;
+        private String explainCodePrompt = DEFAULT_EXPLAIN_CODE_PROMPT;
         private List<String> relevantClassPatterns = Arrays.asList(
                 "*Impl", "*Service", "*Adapter", "*Api", "*Repository",
                 "*Mapper", "*Manager", "*Controller"
@@ -383,6 +393,14 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
 
         public void setStateDiagramPrompt(String stateDiagramPrompt) {
             this.stateDiagramPrompt = stateDiagramPrompt;
+        }
+
+        public String getExplainCodePrompt() {
+            return this.explainCodePrompt;
+        }
+
+        public void setExplainCodePrompt(String explainCodePrompt) {
+            this.explainCodePrompt = explainCodePrompt;
         }
 
         /**

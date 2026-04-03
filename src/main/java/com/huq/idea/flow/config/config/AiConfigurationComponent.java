@@ -383,6 +383,10 @@ public class AiConfigurationComponent {
             promptConfigs.add(new IdeaSettings.PromptConfig("State Diagram", IdeaSettings.getInstance().getState().getStateDiagramPrompt()));
             promptListModel.addElement("State Diagram");
         }
+        if (promptConfigs.stream().noneMatch(c -> c.getName().equals("Explain Code"))) {
+            promptConfigs.add(new IdeaSettings.PromptConfig("Explain Code", IdeaSettings.getInstance().getState().getExplainCodePrompt()));
+            promptListModel.addElement("Explain Code");
+        }
 
         // Event Listeners
         promptList.addListSelectionListener(new ListSelectionListener() {

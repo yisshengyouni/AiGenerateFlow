@@ -9,6 +9,7 @@ You can find the pre-built plugin package in the `distributions` directory of th
 ## ✨ Features
 
 - **🎯 Smart Flow Diagram Generation**: Automatically generate UML activity diagrams from Java method code
+- **💡 Smart Code Explanation**: Analyze Java methods and generate professional natural language explanations, highlighting edge cases and potential risks
 - **🤖 Multi-AI Support**: Compatible with DeepSeek, OpenAI, Anthropic, and other major AI providers
 - **📊 Visual Integration**: View generated diagrams directly within IntelliJ IDEA
 - **🎨 Customizable**: Support for custom prompts and configuration patterns
@@ -18,9 +19,13 @@ You can find the pre-built plugin package in the `distributions` directory of th
 
 ## Actions
 
-The plugin adds the following action to the "Generate" menu:
+The plugin adds the following actions to the "Generate" menu:
 
 1. **Generate UML Flow Diagram** - Generates UML flow diagram from method code using AI
+2. **Generate Sequence Diagram** - Generates a sequence diagram from the method call chain
+3. **Generate Class Diagram** - Generates a class diagram from the class dependencies
+4. **Generate State Diagram** - Generates a state diagram from the class code
+5. **Explain Code** - Analyzes and explains the selected Java method using AI
 
 ## 🚀 Quick Start
 
