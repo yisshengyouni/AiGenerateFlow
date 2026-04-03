@@ -49,7 +49,7 @@ tasks {
     // 设置插件兼容的IDE最小构建版本
     sinceBuild.set("232")
     // 明确设置 untilBuild 为空，不限制最大支持版本
-    untilBuild.set("253.*")
+    untilBuild.set(provider { null })
   }
 
   signPlugin {
