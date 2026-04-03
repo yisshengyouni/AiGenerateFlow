@@ -33,10 +33,15 @@ dependencies {
   implementation("com.github.javaparser:javaparser-symbol-solver-core:3.26.0")
   implementation("com.squareup.okhttp3:okhttp:4.12.0")
   implementation("com.github.vlsi.mxgraph:jgraphx:4.2.2")
+  testImplementation(platform("org.junit:junit-bom:5.10.0"))
+  testImplementation("org.junit.jupiter:junit-jupiter")
 }
 
 
 tasks {
+  test {
+    useJUnitPlatform()
+  }
   // Set the JVM compatibility versions
   withType<JavaCompile> {
     sourceCompatibility = "17"
