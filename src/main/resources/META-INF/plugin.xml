@@ -131,5 +131,19 @@
       <add-to-group group-id="GenerateGroup" anchor="last"/>
       <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
     </action>
+    <action id="com.huq.idea.flow.ReviewCodeAction"
+            class="com.huq.idea.flow.apidoc.ReviewCodeAction"
+            text="Review Code"
+            description="Analyzes and reviews the selected Java method using AI to provide optimization suggestions.">
+      <add-to-group group-id="GenerateGroup" anchor="last"/>
+      <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+    </action>
+    <action id="com.huq.idea.flow.GenerateUnitTestAction"
+            class="com.huq.idea.flow.apidoc.GenerateUnitTestAction"
+            text="Generate Unit Test"
+            description="Generates JUnit 5 tests for the selected Java method using AI.">
+      <add-to-group group-id="GenerateGroup" anchor="last"/>
+      <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+    </action>
   </actions>
 </idea-plugin>
