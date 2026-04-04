@@ -1,12 +1,10 @@
 package com.huq.idea.flow.apidoc;
 
-import com.huq.idea.flow.apidoc.service.UmlFlowService;
+import com.huq.idea.flow.apidoc.ui.CodeAnalysisUIFactory;
 import com.huq.idea.flow.config.config.IdeaSettings;
 import com.huq.idea.flow.model.CallStack;
 import com.huq.idea.flow.model.MethodDescription;
-import com.huq.idea.flow.util.AiUtils;
 import com.huq.idea.flow.util.MethodUtils;
-import com.huq.idea.flow.apidoc.ui.CodeAnalysisUIFactory;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationType;
 import com.intellij.notification.Notifications;
@@ -24,13 +22,13 @@ import com.intellij.psi.PsiJavaFile;
 import com.intellij.psi.PsiMethod;
 
 import javax.swing.*;
-import java.awt.Component;
+import java.awt.*;
 
 /**
- * Action to generate JUnit 5 tests for Java code using AI
+ * Action to generate JavaDoc for Java code using AI
  */
-public class GenerateUnitTestAction extends AnAction implements DumbAware {
-    private static final Logger LOG = Logger.getInstance(GenerateUnitTestAction.class);
+public class GenerateJavaDocAction extends AnAction implements DumbAware {
+    private static final Logger LOG = Logger.getInstance(GenerateJavaDocAction.class);
 
     @Override
     public void actionPerformed(AnActionEvent e) {
@@ -43,7 +41,7 @@ public class GenerateUnitTestAction extends AnAction implements DumbAware {
         if (!(psiFile instanceof PsiJavaFile)) {
             Notifications.Bus.notify(new Notification(
                     "com.yt.huq.idea",
-                    "生成单元测试",
+                    "生成JavaDoc",
                     "此操作仅适用于Java文件",
                     NotificationType.ERROR),
                     project);
@@ -64,7 +62,7 @@ public class GenerateUnitTestAction extends AnAction implements DumbAware {
         if (method == null) {
             Notifications.Bus.notify(new Notification(
                     "com.yt.huq.idea",
-                    "生成单元测试",
+                    "生成JavaDoc",
                     "光标位置未找到方法",
                     NotificationType.ERROR),
                     project);
@@ -88,28 +86,28 @@ public class GenerateUnitTestAction extends AnAction implements DumbAware {
 
                 @Override
                 public String getTabName() {
-                    return "单元测试生成";
+                    return "JavaDoc生成";
                 }
 
                 @Override
                 public String getActionName() {
-                    return "生成测试代码";
+                    return "生成JavaDoc";
                 }
 
                 @Override
                 public String getInitialMessage() {
-                    return "点击\"生成测试代码\"按钮开始生成...";
+                    return "点击\"生成JavaDoc\"按钮开始生成...";
                 }
 
                 @Override
                 public String getSystemMessage() {
-                    return "你是一个高级Java开发专家和测试工程师。请提供高质量、可以直接运行的JUnit 5单元测试代码。如果包含Markdown代码块符号(如```java)，请去掉，只输出纯代码。";
+                    return "你是一个高级Java开发专家。请提供专业、准确的JavaDoc注释，包含方法描述、@param、@return、@throws等信息。只输出带有JavaDoc注释的Java代码，如果包含Markdown代码块符号(如```java)，请去掉，只输出纯代码。";
                 }
 
                 @Override
                 public String getPrompt(String collectedCode) {
                     IdeaSettings.PromptConfig selectedPrompt = (IdeaSettings.PromptConfig) getPromptComboBox().getSelectedItem();
-                    String template = selectedPrompt != null ? selectedPrompt.getPrompt() : IdeaSettings.getInstance().getState().getGenerateTestPrompt();
+                    String template = selectedPrompt != null ? selectedPrompt.getPrompt() : IdeaSettings.getInstance().getState().getGenerateJavaDocPrompt();
                     return String.format(template, collectedCode);
                 }
 
@@ -121,7 +119,7 @@ public class GenerateUnitTestAction extends AnAction implements DumbAware {
                 @Override
                 public JComboBox<IdeaSettings.PromptConfig> getPromptComboBox() {
                     if (promptComboBox == null) {
-                        java.util.List<IdeaSettings.PromptConfig> prompts = IdeaSettings.getInstance().getState().getGenerateTestPrompts();
+                        java.util.List<IdeaSettings.PromptConfig> prompts = IdeaSettings.getInstance().getState().getJavaDocPrompts();
                         promptComboBox = new JComboBox<>(prompts.toArray(new IdeaSettings.PromptConfig[0]));
                         promptComboBox.setRenderer(new DefaultListCellRenderer() {
                             @Override
