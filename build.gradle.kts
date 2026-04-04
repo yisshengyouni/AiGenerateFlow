@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.huq.idea"
-version = "1.3.0"
+version = "1.5.0"
 
 
 repositories {
@@ -33,10 +33,15 @@ dependencies {
   implementation("com.github.javaparser:javaparser-symbol-solver-core:3.26.0")
   implementation("com.squareup.okhttp3:okhttp:4.12.0")
   implementation("com.github.vlsi.mxgraph:jgraphx:4.2.2")
+  testImplementation(platform("org.junit:junit-bom:5.10.0"))
+  testImplementation("org.junit.jupiter:junit-jupiter")
 }
 
 
 tasks {
+  test {
+    useJUnitPlatform()
+  }
   // Set the JVM compatibility versions
   withType<JavaCompile> {
     sourceCompatibility = "17"
@@ -49,7 +54,7 @@ tasks {
     // 设置插件兼容的IDE最小构建版本
     sinceBuild.set("232")
     // 明确设置 untilBuild 为空，不限制最大支持版本
-    untilBuild.set("253.*")
+    untilBuild.set(provider { null })
   }
 
   signPlugin {

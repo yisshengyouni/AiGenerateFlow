@@ -28,3 +28,6 @@ build/
 distributions/
 /.env
 /.kotlin
+
+# HiCoder rules
+.hiCoder/

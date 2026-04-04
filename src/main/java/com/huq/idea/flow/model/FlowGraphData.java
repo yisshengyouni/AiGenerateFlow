@@ -43,9 +43,13 @@ public class FlowGraphData {
      * 从JSON字符串解析流程图数据
      */
     public static FlowGraphData fromJson(String json) {
+        if (json == null || json.trim().isEmpty()) {
+            return new FlowGraphData();
+        }
         try {
             Gson gson = new Gson();
-            return gson.fromJson(json, FlowGraphData.class);
+            FlowGraphData data = gson.fromJson(json, FlowGraphData.class);
+            return data != null ? data : new FlowGraphData();
         } catch (Exception e) {
             LOG.error(e);
             // 如果解析失败，返回一个空的数据对象

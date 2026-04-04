@@ -24,8 +24,10 @@ import com.intellij.util.Query;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -42,7 +44,7 @@ import java.util.stream.Collectors;
 public class MethodChainVisitor extends JavaRecursiveElementVisitor {
 
     private static final Logger log = Logger.getInstance(MethodChainVisitor.class.getName());
-    private final ArrayList<String> imfCache = new ArrayList<>();
+    private final Set<String> imfCache = new HashSet<>();
 
     // 子类方法对应的父类方法
     private final Map<PsiMethod, PsiMethod> subMethodInterfaceMap = new HashMap<>();
