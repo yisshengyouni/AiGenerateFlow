@@ -149,6 +149,24 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
             "5. 语言需要专业、准确，并且排版清晰（可以使用Markdown格式，比如加粗、列表等）。\n\n" +
             "下面是需要分析的代码：\n%s";
 
+    public static final String DEFAULT_REVIEW_CODE_PROMPT = "你是一个高级Java开发专家和代码审查员。请对下面提供的Java代码进行深度审查（Code Review），并给出优化和重构建议。\n" +
+            "请遵循以下规则：\n" +
+            "1. 审查代码的规范性、可读性、可维护性和性能。\n" +
+            "2. 指出潜在的 Bug、内存泄漏、并发安全问题或设计缺陷。\n" +
+            "3. 如果代码中存在可以优化的算法或逻辑，请给出改进建议。\n" +
+            "4. 如果代码可以重构得更优雅（例如应用设计模式、简化条件判断、提取方法等），请给出具体的重构思路和代码示例。\n" +
+            "5. 回复使用Markdown格式排版，清晰易读。\n\n" +
+            "下面是需要审查的代码：\n%s";
+
+    public static final String DEFAULT_GENERATE_TEST_PROMPT = "你是一个高级Java开发专家和测试工程师。请基于下面提供的Java代码，生成JUnit 5的单元测试代码。\n" +
+            "请遵循以下规则：\n" +
+            "1. 生成的代码必须是完整的Java类，包含必要的import语句。\n" +
+            "2. 针对目标类的主要逻辑、边界条件和异常情况设计测试用例。\n" +
+            "3. 使用Mockito等Mock工具来模拟依赖（如果有）。\n" +
+            "4. 遵循Given-When-Then模式，或者使用清晰的注释标注测试步骤。\n" +
+            "5. 不要提供额外的解释，只输出代码即可（如果必须解释，也请放在代码块外部）。\n\n" +
+            "下面是需要生成测试的代码：\n%s";
+
     public static IdeaSettings getInstance() {
         return ApplicationManager.getApplication().getService(IdeaSettings.class);
     }
@@ -255,6 +273,8 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         private String classDiagramPrompt = DEFAULT_CLASS_DIAGRAM_PROMPT;
         private String stateDiagramPrompt = DEFAULT_STATE_DIAGRAM_PROMPT;
         private String explainCodePrompt = DEFAULT_EXPLAIN_CODE_PROMPT;
+        private String reviewCodePrompt = DEFAULT_REVIEW_CODE_PROMPT;
+        private String generateTestPrompt = DEFAULT_GENERATE_TEST_PROMPT;
         private List<String> relevantClassPatterns = Arrays.asList(
                 "*Impl", "*Service", "*Adapter", "*Api", "*Repository",
                 "*Mapper", "*Manager", "*Controller"
@@ -401,6 +421,22 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
 
         public void setExplainCodePrompt(String explainCodePrompt) {
             this.explainCodePrompt = explainCodePrompt;
+        }
+
+        public String getReviewCodePrompt() {
+            return reviewCodePrompt;
+        }
+
+        public void setReviewCodePrompt(String reviewCodePrompt) {
+            this.reviewCodePrompt = reviewCodePrompt;
+        }
+
+        public String getGenerateTestPrompt() {
+            return generateTestPrompt;
+        }
+
+        public void setGenerateTestPrompt(String generateTestPrompt) {
+            this.generateTestPrompt = generateTestPrompt;
         }
 
         /**

@@ -51,7 +51,7 @@ public class FlowGraphData {
             FlowGraphData data = gson.fromJson(json, FlowGraphData.class);
             return data != null ? data : new FlowGraphData();
         } catch (Exception e) {
-            LOG.error(e);
+            LOG.warn("Failed to parse FlowGraphData from JSON: " + e.getMessage());
             // 如果解析失败，返回一个空的数据对象
             return new FlowGraphData();
         }
