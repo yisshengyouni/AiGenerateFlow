@@ -47,6 +47,10 @@ public class IdeaConfigurable implements Configurable {
 
         state.setBuildFlowPrompt(settingsComponent.getBuildFlowPrompt());
         state.setFlowPrompts(settingsComponent.getFlowPrompts());
+        state.setClassPrompts(settingsComponent.getClassPrompts());
+        state.setSequencePrompts(settingsComponent.getSequencePrompts());
+        state.setStatePrompts(settingsComponent.getStatePrompts());
+
         state.setPlantumlPathVal(settingsComponent.getPlantumlPathValue());
         state.setRelevantClassPatterns(settingsComponent.getRelevantPatterns());
         state.setExcludedClassPatterns(settingsComponent.getExcludedPatterns());
@@ -54,18 +58,5 @@ public class IdeaConfigurable implements Configurable {
         state.setClassExcludedClassPatterns(settingsComponent.getClassExcludedPatterns());
         state.setClassDiagramDepth(settingsComponent.getClassDiagramDepth());
         state.setIncludeLibrarySources(settingsComponent.isIncludeLibrarySources());
-
-        // Ensure standard prompts map back correctly
-        for (IdeaSettings.PromptConfig config : state.getFlowPrompts()) {
-            if ("Class Diagram".equals(config.getName())) {
-                state.setClassDiagramPrompt(config.getPrompt());
-            } else if ("Sequence Diagram".equals(config.getName())) {
-                state.setUmlSequencePrompt(config.getPrompt());
-            } else if ("State Diagram".equals(config.getName())) {
-                state.setStateDiagramPrompt(config.getPrompt());
-            } else if ("Explain Code".equals(config.getName())) {
-                state.setExplainCodePrompt(config.getPrompt());
-            }
-        }
     }
 }

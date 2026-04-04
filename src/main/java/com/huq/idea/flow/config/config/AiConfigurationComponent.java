@@ -24,8 +24,13 @@ public class AiConfigurationComponent {
     private JTextArea flowPromptTextArea;
     private DefaultListModel<String> promptListModel;
     private JList<String> promptList;
-    private List<IdeaSettings.PromptConfig> promptConfigs;
+    private JComboBox<String> diagramTypeComboBox;
+    private List<IdeaSettings.PromptConfig> flowPromptConfigs;
+    private List<IdeaSettings.PromptConfig> classPromptConfigs;
+    private List<IdeaSettings.PromptConfig> sequencePromptConfigs;
+    private List<IdeaSettings.PromptConfig> statePromptConfigs;
     private int currentPromptIndex = -1;
+    private int currentDiagramTypeIndex = 0;
     private JTextArea relevantPatternsArea;
     private JTextArea excludedPatternsArea;
     private JTextArea classRelevantPatternsArea;
@@ -50,11 +55,32 @@ public class AiConfigurationComponent {
     private JTextField aiModelsField;
 
     public void init(IdeaSettings.State state) {
-        // 深拷贝 promptConfigs
-        promptConfigs = new ArrayList<>();
+        // 深拷贝 flowPromptConfigs
+        flowPromptConfigs = new ArrayList<>();
         if (state.getFlowPrompts() != null) {
             for (IdeaSettings.PromptConfig config : state.getFlowPrompts()) {
-                promptConfigs.add(new IdeaSettings.PromptConfig(config.getName(), config.getPrompt()));
+                flowPromptConfigs.add(new IdeaSettings.PromptConfig(config.getName(), config.getPrompt()));
+            }
+        }
+
+        classPromptConfigs = new ArrayList<>();
+        if (state.getClassPrompts() != null) {
+            for (IdeaSettings.PromptConfig config : state.getClassPrompts()) {
+                classPromptConfigs.add(new IdeaSettings.PromptConfig(config.getName(), config.getPrompt()));
+            }
+        }
+
+        sequencePromptConfigs = new ArrayList<>();
+        if (state.getSequencePrompts() != null) {
+            for (IdeaSettings.PromptConfig config : state.getSequencePrompts()) {
+                sequencePromptConfigs.add(new IdeaSettings.PromptConfig(config.getName(), config.getPrompt()));
+            }
+        }
+
+        statePromptConfigs = new ArrayList<>();
+        if (state.getStatePrompts() != null) {
+            for (IdeaSettings.PromptConfig config : state.getStatePrompts()) {
+                statePromptConfigs.add(new IdeaSettings.PromptConfig(config.getName(), config.getPrompt()));
             }
         }
 
@@ -71,14 +97,9 @@ public class AiConfigurationComponent {
         // 设置数据
         plantumlPathVal.setText(state.getPlantumlPathVal());
 
-        promptListModel.clear();
-        for (IdeaSettings.PromptConfig config : promptConfigs) {
-            promptListModel.addElement(config.getName());
-        }
-
-        if (!promptConfigs.isEmpty()) {
-            promptList.setSelectedIndex(0);
-        }
+        // Initialize the prompt list for the default selected tab (index 0)
+        currentDiagramTypeIndex = diagramTypeComboBox.getSelectedIndex();
+        populatePromptListForActiveTab();
 
         relevantPatternsArea.setText(String.join("\n", state.getRelevantClassPatterns()));
         excludedPatternsArea.setText(String.join("\n", state.getExcludedClassPatterns()));
@@ -334,6 +355,13 @@ public class AiConfigurationComponent {
         promptConfigPanel = new JPanel(new BorderLayout());
         promptConfigPanel.setBorder(new TitledBorder("提示词配置"));
 
+        // Top Panel: Diagram Type Selector
+        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        topPanel.add(new JLabel("图表类型: "));
+        diagramTypeComboBox = new JComboBox<>(new String[]{"流程图 (Flow Diagram)", "类图 (Class Diagram)", "时序图 (Sequence Diagram)", "状态图 (State Diagram)"});
+        topPanel.add(diagramTypeComboBox);
+        promptConfigPanel.add(topPanel, BorderLayout.NORTH);
+
         // Left Panel: List of prompts
         JPanel leftPanel = new JPanel(new BorderLayout());
         promptListModel = new DefaultListModel<>();
@@ -370,37 +398,33 @@ public class AiConfigurationComponent {
         splitPane.setDividerLocation(200);
         promptConfigPanel.add(splitPane, BorderLayout.CENTER);
 
-        // Populate promptConfigs from standard places if missing Class/Sequence/State
-        if (promptConfigs.stream().noneMatch(c -> c.getName().equals("Class Diagram"))) {
-            promptConfigs.add(new IdeaSettings.PromptConfig("Class Diagram", IdeaSettings.getInstance().getState().getClassDiagramPrompt()));
-            promptListModel.addElement("Class Diagram");
-        }
-        if (promptConfigs.stream().noneMatch(c -> c.getName().equals("Sequence Diagram"))) {
-            promptConfigs.add(new IdeaSettings.PromptConfig("Sequence Diagram", IdeaSettings.getInstance().getState().getUmlSequencePrompt()));
-            promptListModel.addElement("Sequence Diagram");
-        }
-        if (promptConfigs.stream().noneMatch(c -> c.getName().equals("State Diagram"))) {
-            promptConfigs.add(new IdeaSettings.PromptConfig("State Diagram", IdeaSettings.getInstance().getState().getStateDiagramPrompt()));
-            promptListModel.addElement("State Diagram");
-        }
-        if (promptConfigs.stream().noneMatch(c -> c.getName().equals("Explain Code"))) {
-            promptConfigs.add(new IdeaSettings.PromptConfig("Explain Code", IdeaSettings.getInstance().getState().getExplainCodePrompt()));
-            promptListModel.addElement("Explain Code");
-        }
-
         // Event Listeners
+        diagramTypeComboBox.addActionListener(e -> {
+            int newTypeIndex = diagramTypeComboBox.getSelectedIndex();
+            if (newTypeIndex == currentDiagramTypeIndex) {
+                return;
+            }
+
+            // Save current before switching
+            saveCurrentPrompt();
+
+            // Update the tracked type index to the new one
+            currentDiagramTypeIndex = newTypeIndex;
+
+            populatePromptListForActiveTab();
+        });
+
         promptList.addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
                 if (!e.getValueIsAdjusting()) {
                     // Save previous prompt if we were editing one
-                    if (currentPromptIndex >= 0 && currentPromptIndex < promptConfigs.size()) {
-                        promptConfigs.get(currentPromptIndex).setPrompt(flowPromptTextArea.getText());
-                    }
+                    saveCurrentPrompt();
 
                     currentPromptIndex = promptList.getSelectedIndex();
-                    if (currentPromptIndex >= 0 && currentPromptIndex < promptConfigs.size()) {
-                        flowPromptTextArea.setText(promptConfigs.get(currentPromptIndex).getPrompt());
+                    List<IdeaSettings.PromptConfig> activeConfigs = getActivePromptConfigs();
+                    if (currentPromptIndex >= 0 && currentPromptIndex < activeConfigs.size()) {
+                        flowPromptTextArea.setText(activeConfigs.get(currentPromptIndex).getPrompt());
                         flowPromptTextArea.setEnabled(true);
                     } else {
                         flowPromptTextArea.setText("");
@@ -413,8 +437,16 @@ public class AiConfigurationComponent {
         addButton.addActionListener(e -> {
             String name = JOptionPane.showInputDialog(mainPanel, "请输入新提示词名称:", "添加提示词", JOptionPane.PLAIN_MESSAGE);
             if (name != null && !name.trim().isEmpty()) {
-                IdeaSettings.PromptConfig newConfig = new IdeaSettings.PromptConfig(name.trim(), IdeaSettings.DEFAULT_BUILD_FLOW_PROMPT);
-                promptConfigs.add(newConfig);
+                String defaultPrompt = "";
+                int typeIndex = diagramTypeComboBox.getSelectedIndex();
+                if (typeIndex == 0) defaultPrompt = IdeaSettings.DEFAULT_BUILD_FLOW_PROMPT;
+                else if (typeIndex == 1) defaultPrompt = IdeaSettings.DEFAULT_CLASS_DIAGRAM_PROMPT;
+                else if (typeIndex == 2) defaultPrompt = IdeaSettings.DEFAULT_UML_SEQUENCE_PROMPT;
+                else if (typeIndex == 3) defaultPrompt = IdeaSettings.DEFAULT_STATE_DIAGRAM_PROMPT;
+
+                IdeaSettings.PromptConfig newConfig = new IdeaSettings.PromptConfig(name.trim(), defaultPrompt);
+                List<IdeaSettings.PromptConfig> activeConfigs = getActivePromptConfigs();
+                activeConfigs.add(newConfig);
                 promptListModel.addElement(newConfig.getName());
                 promptList.setSelectedIndex(promptListModel.size() - 1);
             }
@@ -423,13 +455,14 @@ public class AiConfigurationComponent {
         removeButton.addActionListener(e -> {
             int selectedIndex = promptList.getSelectedIndex();
             if (selectedIndex >= 0) {
+                List<IdeaSettings.PromptConfig> activeConfigs = getActivePromptConfigs();
                 // If we are deleting the last item, ensure there is at least one
-                if (promptConfigs.size() <= 1) {
+                if (activeConfigs.size() <= 1) {
                     JOptionPane.showMessageDialog(mainPanel, "必须保留至少一个提示词配置。", "无法删除", JOptionPane.WARNING_MESSAGE);
                     return;
                 }
                 currentPromptIndex = -1; // Prevent saving to the deleted index
-                promptConfigs.remove(selectedIndex);
+                activeConfigs.remove(selectedIndex);
                 promptListModel.remove(selectedIndex);
                 if (selectedIndex >= promptListModel.size()) {
                     promptList.setSelectedIndex(promptListModel.size() - 1);
@@ -442,14 +475,49 @@ public class AiConfigurationComponent {
         renameButton.addActionListener(e -> {
             int selectedIndex = promptList.getSelectedIndex();
             if (selectedIndex >= 0) {
-                String oldName = promptConfigs.get(selectedIndex).getName();
+                List<IdeaSettings.PromptConfig> activeConfigs = getActivePromptConfigs();
+                String oldName = activeConfigs.get(selectedIndex).getName();
                 String newName = JOptionPane.showInputDialog(mainPanel, "请输入新名称:", oldName);
                 if (newName != null && !newName.trim().isEmpty()) {
-                    promptConfigs.get(selectedIndex).setName(newName.trim());
+                    activeConfigs.get(selectedIndex).setName(newName.trim());
                     promptListModel.set(selectedIndex, newName.trim());
                 }
             }
         });
+    }
+
+    private void saveCurrentPrompt() {
+        if (currentPromptIndex >= 0) {
+            List<IdeaSettings.PromptConfig> activeConfigs = getActivePromptConfigs();
+            if (currentPromptIndex < activeConfigs.size()) {
+                activeConfigs.get(currentPromptIndex).setPrompt(flowPromptTextArea.getText());
+            }
+        }
+    }
+
+    private void populatePromptListForActiveTab() {
+        promptListModel.clear();
+        List<IdeaSettings.PromptConfig> activeConfigs = getActivePromptConfigs();
+        for (IdeaSettings.PromptConfig config : activeConfigs) {
+            promptListModel.addElement(config.getName());
+        }
+
+        if (!activeConfigs.isEmpty()) {
+            promptList.setSelectedIndex(0);
+        } else {
+            flowPromptTextArea.setText("");
+            flowPromptTextArea.setEnabled(false);
+            currentPromptIndex = -1;
+        }
+    }
+
+    private List<IdeaSettings.PromptConfig> getActivePromptConfigs() {
+        int index = currentDiagramTypeIndex;
+        if (index == 0) return flowPromptConfigs;
+        else if (index == 1) return classPromptConfigs;
+        else if (index == 2) return sequencePromptConfigs;
+        else if (index == 3) return statePromptConfigs;
+        return flowPromptConfigs;
     }
     
     /**
@@ -601,11 +669,23 @@ public class AiConfigurationComponent {
     }
 
     public List<IdeaSettings.PromptConfig> getFlowPrompts() {
-        // Ensure the current edited text is saved to the active prompt config
-        if (currentPromptIndex >= 0 && currentPromptIndex < promptConfigs.size()) {
-            promptConfigs.get(currentPromptIndex).setPrompt(flowPromptTextArea.getText());
-        }
-        return promptConfigs;
+        saveCurrentPrompt();
+        return flowPromptConfigs;
+    }
+
+    public List<IdeaSettings.PromptConfig> getClassPrompts() {
+        saveCurrentPrompt();
+        return classPromptConfigs;
+    }
+
+    public List<IdeaSettings.PromptConfig> getSequencePrompts() {
+        saveCurrentPrompt();
+        return sequencePromptConfigs;
+    }
+
+    public List<IdeaSettings.PromptConfig> getStatePrompts() {
+        saveCurrentPrompt();
+        return statePromptConfigs;
     }
 
 

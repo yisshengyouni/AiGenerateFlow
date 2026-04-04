@@ -28,6 +28,7 @@ import com.intellij.psi.PsiJavaFile;
 import com.intellij.psi.PsiMethod;
 import org.jetbrains.annotations.NotNull;
 import com.huq.idea.flow.apidoc.ui.UmlDiagramUIFactory;
+import com.intellij.openapi.ui.ComboBox;
 
 import javax.swing.*;
 import java.awt.*;
@@ -104,10 +105,34 @@ public class SequenceDiagramAction extends AnAction implements DumbAware {
             String title = currentMethod.getClass().getSimpleName() + "." + currentMethod.getName();
 
             UmlDiagramUIFactory.PromptProvider promptProvider = new UmlDiagramUIFactory.PromptProvider() {
+                private ComboBox<IdeaSettings.PromptConfig> promptComboBox;
+
                 @Override
                 public String getPrompt(String collectedCode) {
-                    String flowPromptTemplate = getFlowDiagramPrompt();
-                    return String.format(flowPromptTemplate, collectedCode);
+                    IdeaSettings.PromptConfig selectedPromptConfig = promptComboBox != null ? (IdeaSettings.PromptConfig) promptComboBox.getSelectedItem() : null;
+                    String sequencePromptTemplate = selectedPromptConfig != null ? selectedPromptConfig.getPrompt() : getFlowDiagramPrompt();
+                    return String.format(sequencePromptTemplate, collectedCode);
+                }
+
+                @Override
+                public JComboBox<IdeaSettings.PromptConfig> getPromptComboBox() {
+                    java.util.List<IdeaSettings.PromptConfig> prompts = IdeaSettings.getInstance().getState().getSequencePrompts();
+                    promptComboBox = new ComboBox<>(prompts.toArray(new IdeaSettings.PromptConfig[0]));
+
+                    if (!prompts.isEmpty()) {
+                        promptComboBox.setSelectedIndex(0);
+                    }
+                    promptComboBox.setRenderer(new DefaultListCellRenderer() {
+                        @Override
+                        public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                            super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                            if (value instanceof IdeaSettings.PromptConfig) {
+                                setText(((IdeaSettings.PromptConfig) value).getName());
+                            }
+                            return this;
+                        }
+                    });
+                    return promptComboBox;
                 }
             };
 

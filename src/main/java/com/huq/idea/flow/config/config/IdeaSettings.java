@@ -268,6 +268,10 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         private String buildMethodPrompt = DEFAULT_BUILD_METHOD_PROMPT;
         private String buildFlowPrompt = DEFAULT_BUILD_FLOW_PROMPT;
         private List<PromptConfig> flowPrompts;
+        private List<PromptConfig> classPrompts;
+        private List<PromptConfig> sequencePrompts;
+        private List<PromptConfig> statePrompts;
+
         private String buildFlowJsonPrompt = DEFAULT_BUILD_FLOW_JSON_PROMPT;
         private String umlSequencePrompt = DEFAULT_UML_SEQUENCE_PROMPT;
         private String classDiagramPrompt = DEFAULT_CLASS_DIAGRAM_PROMPT;
@@ -381,6 +385,54 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
 
         public void setFlowPrompts(List<PromptConfig> flowPrompts) {
             this.flowPrompts = flowPrompts;
+        }
+
+        public List<PromptConfig> getClassPrompts() {
+            if (classPrompts == null || classPrompts.isEmpty()) {
+                classPrompts = new java.util.ArrayList<>();
+                if (classDiagramPrompt != null && !classDiagramPrompt.isEmpty()) {
+                    classPrompts.add(new PromptConfig("Default", classDiagramPrompt));
+                } else {
+                    classPrompts.add(new PromptConfig("Default", DEFAULT_CLASS_DIAGRAM_PROMPT));
+                }
+            }
+            return classPrompts;
+        }
+
+        public void setClassPrompts(List<PromptConfig> classPrompts) {
+            this.classPrompts = classPrompts;
+        }
+
+        public List<PromptConfig> getSequencePrompts() {
+            if (sequencePrompts == null || sequencePrompts.isEmpty()) {
+                sequencePrompts = new java.util.ArrayList<>();
+                if (umlSequencePrompt != null && !umlSequencePrompt.isEmpty()) {
+                    sequencePrompts.add(new PromptConfig("Default", umlSequencePrompt));
+                } else {
+                    sequencePrompts.add(new PromptConfig("Default", DEFAULT_UML_SEQUENCE_PROMPT));
+                }
+            }
+            return sequencePrompts;
+        }
+
+        public void setSequencePrompts(List<PromptConfig> sequencePrompts) {
+            this.sequencePrompts = sequencePrompts;
+        }
+
+        public List<PromptConfig> getStatePrompts() {
+            if (statePrompts == null || statePrompts.isEmpty()) {
+                statePrompts = new java.util.ArrayList<>();
+                if (stateDiagramPrompt != null && !stateDiagramPrompt.isEmpty()) {
+                    statePrompts.add(new PromptConfig("Default", stateDiagramPrompt));
+                } else {
+                    statePrompts.add(new PromptConfig("Default", DEFAULT_STATE_DIAGRAM_PROMPT));
+                }
+            }
+            return statePrompts;
+        }
+
+        public void setStatePrompts(List<PromptConfig> statePrompts) {
+            this.statePrompts = statePrompts;
         }
 
         public String getBuildFlowJsonPrompt() {
