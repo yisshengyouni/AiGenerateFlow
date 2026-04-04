@@ -33,6 +33,7 @@ import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.psi.util.PsiUtil;
 import org.jetbrains.annotations.NotNull;
 import com.huq.idea.flow.apidoc.ui.UmlDiagramUIFactory;
+import com.intellij.openapi.ui.ComboBox;
 
 import javax.swing.*;
 import java.awt.*;
@@ -124,10 +125,34 @@ public class ClassDiagramAction extends AnAction {
                 // 显示初始对话框
                 SwingUtilities.invokeLater(() -> {
                     UmlDiagramUIFactory.PromptProvider promptProvider = new UmlDiagramUIFactory.PromptProvider() {
+                        private ComboBox<IdeaSettings.PromptConfig> promptComboBox;
+
                         @Override
                         public String getPrompt(String collectedCode) {
-                            String classDiagramPromptTemplate = IdeaSettings.getInstance().getState().getClassDiagramPrompt();
+                            IdeaSettings.PromptConfig selectedPromptConfig = promptComboBox != null ? (IdeaSettings.PromptConfig) promptComboBox.getSelectedItem() : null;
+                            String classDiagramPromptTemplate = selectedPromptConfig != null ? selectedPromptConfig.getPrompt() : IdeaSettings.getInstance().getState().getClassDiagramPrompt();
                             return String.format(classDiagramPromptTemplate, collectedCode);
+                        }
+
+                        @Override
+                        public JComboBox<IdeaSettings.PromptConfig> getPromptComboBox() {
+                            java.util.List<IdeaSettings.PromptConfig> prompts = IdeaSettings.getInstance().getState().getClassPrompts();
+                            promptComboBox = new ComboBox<>(prompts.toArray(new IdeaSettings.PromptConfig[0]));
+
+                            if (!prompts.isEmpty()) {
+                                promptComboBox.setSelectedIndex(0);
+                            }
+                            promptComboBox.setRenderer(new DefaultListCellRenderer() {
+                                @Override
+                                public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                                    super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                                    if (value instanceof IdeaSettings.PromptConfig) {
+                                        setText(((IdeaSettings.PromptConfig) value).getName());
+                                    }
+                                    return this;
+                                }
+                            });
+                            return promptComboBox;
                         }
                     };
                     UmlDiagramUIFactory.showInitialDialog(project, collectedCode, "UML类图: " + currentClass.getName(), promptProvider, "生成类图");
