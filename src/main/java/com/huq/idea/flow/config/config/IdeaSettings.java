@@ -167,6 +167,16 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
             "5. 不要提供额外的解释，只输出代码即可（如果必须解释，也请放在代码块外部）。\n\n" +
             "下面是需要生成测试的代码：\n%s";
 
+    public static final String DEFAULT_GENERATE_JAVADOC_PROMPT = "你是一个高级Java开发专家和文档工程师。请基于下面提供的Java代码，生成规范的JavaDoc注释。\n" +
+            "请遵循以下规则：\n" +
+            "1. 包含对方法功能的清晰描述。\n" +
+            "2. 包含 @param 注释说明每个参数。\n" +
+            "3. 包含 @return 注释说明返回值（如果是void则不需要）。\n" +
+            "4. 包含 @throws 注释说明可能抛出的异常。\n" +
+            "5. 包含适当的 @author 和 @since 标签（如果适用）。\n" +
+            "6. 只输出带有JavaDoc注释的方法代码片段。\n\n" +
+            "下面是需要生成JavaDoc的代码：\n%s";
+
     public static IdeaSettings getInstance() {
         return ApplicationManager.getApplication().getService(IdeaSettings.class);
     }
@@ -271,6 +281,10 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         private List<PromptConfig> classPrompts;
         private List<PromptConfig> sequencePrompts;
         private List<PromptConfig> statePrompts;
+        private List<PromptConfig> explainPrompts;
+        private List<PromptConfig> reviewPrompts;
+        private List<PromptConfig> generateTestPrompts;
+        private List<PromptConfig> javaDocPrompts;
 
         private String buildFlowJsonPrompt = DEFAULT_BUILD_FLOW_JSON_PROMPT;
         private String umlSequencePrompt = DEFAULT_UML_SEQUENCE_PROMPT;
@@ -279,6 +293,7 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         private String explainCodePrompt = DEFAULT_EXPLAIN_CODE_PROMPT;
         private String reviewCodePrompt = DEFAULT_REVIEW_CODE_PROMPT;
         private String generateTestPrompt = DEFAULT_GENERATE_TEST_PROMPT;
+        private String javaDocPrompt = DEFAULT_GENERATE_JAVADOC_PROMPT;
         private List<String> relevantClassPatterns = Arrays.asList(
                 "*Impl", "*Service", "*Adapter", "*Api", "*Repository",
                 "*Mapper", "*Manager", "*Controller"
@@ -435,6 +450,54 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
             this.statePrompts = statePrompts;
         }
 
+        public List<PromptConfig> getExplainPrompts() {
+            if (explainPrompts == null || explainPrompts.isEmpty()) {
+                explainPrompts = new java.util.ArrayList<>();
+                explainPrompts.add(new PromptConfig("Default", explainCodePrompt != null ? explainCodePrompt : DEFAULT_EXPLAIN_CODE_PROMPT));
+            }
+            return explainPrompts;
+        }
+
+        public void setExplainPrompts(List<PromptConfig> explainPrompts) {
+            this.explainPrompts = explainPrompts;
+        }
+
+        public List<PromptConfig> getReviewPrompts() {
+            if (reviewPrompts == null || reviewPrompts.isEmpty()) {
+                reviewPrompts = new java.util.ArrayList<>();
+                reviewPrompts.add(new PromptConfig("Default", reviewCodePrompt != null ? reviewCodePrompt : DEFAULT_REVIEW_CODE_PROMPT));
+            }
+            return reviewPrompts;
+        }
+
+        public void setReviewPrompts(List<PromptConfig> reviewPrompts) {
+            this.reviewPrompts = reviewPrompts;
+        }
+
+        public List<PromptConfig> getGenerateTestPrompts() {
+            if (generateTestPrompts == null || generateTestPrompts.isEmpty()) {
+                generateTestPrompts = new java.util.ArrayList<>();
+                generateTestPrompts.add(new PromptConfig("Default", generateTestPrompt != null ? generateTestPrompt : DEFAULT_GENERATE_TEST_PROMPT));
+            }
+            return generateTestPrompts;
+        }
+
+        public void setGenerateTestPrompts(List<PromptConfig> generateTestPrompts) {
+            this.generateTestPrompts = generateTestPrompts;
+        }
+
+        public List<PromptConfig> getJavaDocPrompts() {
+            if (javaDocPrompts == null || javaDocPrompts.isEmpty()) {
+                javaDocPrompts = new java.util.ArrayList<>();
+                javaDocPrompts.add(new PromptConfig("Default", javaDocPrompt != null ? javaDocPrompt : DEFAULT_GENERATE_JAVADOC_PROMPT));
+            }
+            return javaDocPrompts;
+        }
+
+        public void setJavaDocPrompts(List<PromptConfig> javaDocPrompts) {
+            this.javaDocPrompts = javaDocPrompts;
+        }
+
         public String getBuildFlowJsonPrompt() {
             return this.buildFlowJsonPrompt;
         }
@@ -489,6 +552,14 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
 
         public void setGenerateTestPrompt(String generateTestPrompt) {
             this.generateTestPrompt = generateTestPrompt;
+        }
+
+        public String getJavaDocPrompt() {
+            return javaDocPrompt;
+        }
+
+        public void setJavaDocPrompt(String javaDocPrompt) {
+            this.javaDocPrompt = javaDocPrompt;
         }
 
         /**
