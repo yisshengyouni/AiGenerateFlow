@@ -26,10 +26,10 @@ import org.jetbrains.annotations.NotNull;
 import javax.swing.*;
 
 /**
- * Action to explain Java code using AI
+ * Action to generate JavaDoc using AI
  */
-public class ExplainCodeAction extends AnAction {
-    private static final Logger LOG = Logger.getInstance(ExplainCodeAction.class);
+public class GenerateJavaDocAction extends AnAction {
+    private static final Logger LOG = Logger.getInstance(GenerateJavaDocAction.class);
 
     @Override
     public void actionPerformed(AnActionEvent e) {
@@ -42,7 +42,7 @@ public class ExplainCodeAction extends AnAction {
         if (!(psiFile instanceof PsiJavaFile)) {
             Notifications.Bus.notify(new Notification(
                     "com.yt.huq.idea",
-                    "代码解释",
+                    "生成JavaDoc",
                     "此操作仅适用于Java文件",
                     NotificationType.ERROR),
                     project);
@@ -63,7 +63,7 @@ public class ExplainCodeAction extends AnAction {
         if (method == null) {
             Notifications.Bus.notify(new Notification(
                     "com.yt.huq.idea",
-                    "代码解释",
+                    "生成JavaDoc",
                     "光标位置未找到方法",
                     NotificationType.ERROR),
                     project);
@@ -84,17 +84,17 @@ public class ExplainCodeAction extends AnAction {
             CodeAnalysisUIFactory.createAndShowAnalysisPanel(
                     project,
                     title,
-                    "代码解释",
+                    "生成JavaDoc",
                     collectedCode,
-                    "点击\"解释代码\"按钮开始分析...",
-                    "解释代码",
-                    "你是一个高级Java开发专家和架构师。请提供专业、准确、易懂的代码解释。",
+                    "点击\"生成JavaDoc\"按钮开始分析并生成JavaDoc...",
+                    "生成JavaDoc",
+                    "你是一个高级Java开发专家和文档工程师。请提供专业、准确的JavaDoc注释。",
                     code -> {
                         IdeaSettings.PromptConfig activePrompt = null;
-                        if (IdeaSettings.getInstance().getState().getExplainPrompts() != null && !IdeaSettings.getInstance().getState().getExplainPrompts().isEmpty()) {
-                            activePrompt = IdeaSettings.getInstance().getState().getExplainPrompts().get(0);
+                        if (IdeaSettings.getInstance().getState().getJavaDocPrompts() != null && !IdeaSettings.getInstance().getState().getJavaDocPrompts().isEmpty()) {
+                            activePrompt = IdeaSettings.getInstance().getState().getJavaDocPrompts().get(0);
                         }
-                        String template = activePrompt != null ? activePrompt.getPrompt() : IdeaSettings.DEFAULT_EXPLAIN_CODE_PROMPT;
+                        String template = activePrompt != null ? activePrompt.getPrompt() : IdeaSettings.DEFAULT_GENERATE_JAVADOC_PROMPT;
                         return String.format(template, code);
                     }
             );
