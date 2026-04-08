@@ -271,6 +271,9 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         private List<PromptConfig> classPrompts;
         private List<PromptConfig> sequencePrompts;
         private List<PromptConfig> statePrompts;
+        private List<PromptConfig> explainCodePrompts;
+        private List<PromptConfig> reviewCodePrompts;
+        private List<PromptConfig> generateTestPrompts;
 
         private String buildFlowJsonPrompt = DEFAULT_BUILD_FLOW_JSON_PROMPT;
         private String umlSequencePrompt = DEFAULT_UML_SEQUENCE_PROMPT;
@@ -433,6 +436,54 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
 
         public void setStatePrompts(List<PromptConfig> statePrompts) {
             this.statePrompts = statePrompts;
+        }
+
+        public List<PromptConfig> getExplainCodePrompts() {
+            if (explainCodePrompts == null || explainCodePrompts.isEmpty()) {
+                explainCodePrompts = new java.util.ArrayList<>();
+                if (explainCodePrompt != null && !explainCodePrompt.isEmpty()) {
+                    explainCodePrompts.add(new PromptConfig("Default", explainCodePrompt));
+                } else {
+                    explainCodePrompts.add(new PromptConfig("Default", DEFAULT_EXPLAIN_CODE_PROMPT));
+                }
+            }
+            return explainCodePrompts;
+        }
+
+        public void setExplainCodePrompts(List<PromptConfig> explainCodePrompts) {
+            this.explainCodePrompts = explainCodePrompts;
+        }
+
+        public List<PromptConfig> getReviewCodePrompts() {
+            if (reviewCodePrompts == null || reviewCodePrompts.isEmpty()) {
+                reviewCodePrompts = new java.util.ArrayList<>();
+                if (reviewCodePrompt != null && !reviewCodePrompt.isEmpty()) {
+                    reviewCodePrompts.add(new PromptConfig("Default", reviewCodePrompt));
+                } else {
+                    reviewCodePrompts.add(new PromptConfig("Default", DEFAULT_REVIEW_CODE_PROMPT));
+                }
+            }
+            return reviewCodePrompts;
+        }
+
+        public void setReviewCodePrompts(List<PromptConfig> reviewCodePrompts) {
+            this.reviewCodePrompts = reviewCodePrompts;
+        }
+
+        public List<PromptConfig> getGenerateTestPrompts() {
+            if (generateTestPrompts == null || generateTestPrompts.isEmpty()) {
+                generateTestPrompts = new java.util.ArrayList<>();
+                if (generateTestPrompt != null && !generateTestPrompt.isEmpty()) {
+                    generateTestPrompts.add(new PromptConfig("Default", generateTestPrompt));
+                } else {
+                    generateTestPrompts.add(new PromptConfig("Default", DEFAULT_GENERATE_TEST_PROMPT));
+                }
+            }
+            return generateTestPrompts;
+        }
+
+        public void setGenerateTestPrompts(List<PromptConfig> generateTestPrompts) {
+            this.generateTestPrompts = generateTestPrompts;
         }
 
         public String getBuildFlowJsonPrompt() {

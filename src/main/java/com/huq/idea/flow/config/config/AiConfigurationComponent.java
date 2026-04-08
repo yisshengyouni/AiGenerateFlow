@@ -29,6 +29,9 @@ public class AiConfigurationComponent {
     private List<IdeaSettings.PromptConfig> classPromptConfigs;
     private List<IdeaSettings.PromptConfig> sequencePromptConfigs;
     private List<IdeaSettings.PromptConfig> statePromptConfigs;
+    private List<IdeaSettings.PromptConfig> explainCodePromptConfigs;
+    private List<IdeaSettings.PromptConfig> reviewCodePromptConfigs;
+    private List<IdeaSettings.PromptConfig> generateTestPromptConfigs;
     private int currentPromptIndex = -1;
     private int currentDiagramTypeIndex = 0;
     private JTextArea relevantPatternsArea;
@@ -81,6 +84,27 @@ public class AiConfigurationComponent {
         if (state.getStatePrompts() != null) {
             for (IdeaSettings.PromptConfig config : state.getStatePrompts()) {
                 statePromptConfigs.add(new IdeaSettings.PromptConfig(config.getName(), config.getPrompt()));
+            }
+        }
+
+        explainCodePromptConfigs = new ArrayList<>();
+        if (state.getExplainCodePrompts() != null) {
+            for (IdeaSettings.PromptConfig config : state.getExplainCodePrompts()) {
+                explainCodePromptConfigs.add(new IdeaSettings.PromptConfig(config.getName(), config.getPrompt()));
+            }
+        }
+
+        reviewCodePromptConfigs = new ArrayList<>();
+        if (state.getReviewCodePrompts() != null) {
+            for (IdeaSettings.PromptConfig config : state.getReviewCodePrompts()) {
+                reviewCodePromptConfigs.add(new IdeaSettings.PromptConfig(config.getName(), config.getPrompt()));
+            }
+        }
+
+        generateTestPromptConfigs = new ArrayList<>();
+        if (state.getGenerateTestPrompts() != null) {
+            for (IdeaSettings.PromptConfig config : state.getGenerateTestPrompts()) {
+                generateTestPromptConfigs.add(new IdeaSettings.PromptConfig(config.getName(), config.getPrompt()));
             }
         }
 
@@ -357,8 +381,16 @@ public class AiConfigurationComponent {
 
         // Top Panel: Diagram Type Selector
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        topPanel.add(new JLabel("图表类型: "));
-        diagramTypeComboBox = new JComboBox<>(new String[]{"流程图 (Flow Diagram)", "类图 (Class Diagram)", "时序图 (Sequence Diagram)", "状态图 (State Diagram)"});
+        topPanel.add(new JLabel("功能类型: "));
+        diagramTypeComboBox = new JComboBox<>(new String[]{
+            "流程图 (Flow Diagram)",
+            "类图 (Class Diagram)",
+            "时序图 (Sequence Diagram)",
+            "状态图 (State Diagram)",
+            "代码解释 (Explain Code)",
+            "代码审查 (Review Code)",
+            "生成单元测试 (Generate Unit Test)"
+        });
         topPanel.add(diagramTypeComboBox);
         promptConfigPanel.add(topPanel, BorderLayout.NORTH);
 
@@ -443,6 +475,9 @@ public class AiConfigurationComponent {
                 else if (typeIndex == 1) defaultPrompt = IdeaSettings.DEFAULT_CLASS_DIAGRAM_PROMPT;
                 else if (typeIndex == 2) defaultPrompt = IdeaSettings.DEFAULT_UML_SEQUENCE_PROMPT;
                 else if (typeIndex == 3) defaultPrompt = IdeaSettings.DEFAULT_STATE_DIAGRAM_PROMPT;
+                else if (typeIndex == 4) defaultPrompt = IdeaSettings.DEFAULT_EXPLAIN_CODE_PROMPT;
+                else if (typeIndex == 5) defaultPrompt = IdeaSettings.DEFAULT_REVIEW_CODE_PROMPT;
+                else if (typeIndex == 6) defaultPrompt = IdeaSettings.DEFAULT_GENERATE_TEST_PROMPT;
 
                 IdeaSettings.PromptConfig newConfig = new IdeaSettings.PromptConfig(name.trim(), defaultPrompt);
                 List<IdeaSettings.PromptConfig> activeConfigs = getActivePromptConfigs();
@@ -517,6 +552,9 @@ public class AiConfigurationComponent {
         else if (index == 1) return classPromptConfigs;
         else if (index == 2) return sequencePromptConfigs;
         else if (index == 3) return statePromptConfigs;
+        else if (index == 4) return explainCodePromptConfigs;
+        else if (index == 5) return reviewCodePromptConfigs;
+        else if (index == 6) return generateTestPromptConfigs;
         return flowPromptConfigs;
     }
     
@@ -686,6 +724,21 @@ public class AiConfigurationComponent {
     public List<IdeaSettings.PromptConfig> getStatePrompts() {
         saveCurrentPrompt();
         return statePromptConfigs;
+    }
+
+    public List<IdeaSettings.PromptConfig> getExplainCodePrompts() {
+        saveCurrentPrompt();
+        return explainCodePromptConfigs;
+    }
+
+    public List<IdeaSettings.PromptConfig> getReviewCodePrompts() {
+        saveCurrentPrompt();
+        return reviewCodePromptConfigs;
+    }
+
+    public List<IdeaSettings.PromptConfig> getGenerateTestPrompts() {
+        saveCurrentPrompt();
+        return generateTestPromptConfigs;
     }
 
 
