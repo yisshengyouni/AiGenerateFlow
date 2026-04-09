@@ -124,7 +124,7 @@
       <add-to-group group-id="GenerateGroup" anchor="last"/>
       <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
     </action>
-    <!--<action id="com.huq.idea.flow.ExplainCodeAction"
+    <action id="com.huq.idea.flow.ExplainCodeAction"
             class="com.huq.idea.flow.apidoc.ExplainCodeAction"
             text="Explain Code"
             description="Analyzes and explains the selected Java method using AI.">
@@ -144,6 +144,6 @@
             description="Generates JUnit 5 tests for the selected Java method using AI.">
       <add-to-group group-id="GenerateGroup" anchor="last"/>
       <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
-    </action>-->
+    </action>
   </actions>
 </idea-plugin>
