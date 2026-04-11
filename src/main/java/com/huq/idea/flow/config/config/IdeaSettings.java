@@ -167,6 +167,14 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
             "5. 不要提供额外的解释，只输出代码即可（如果必须解释，也请放在代码块外部）。\n\n" +
             "下面是需要生成测试的代码：\n%s";
 
+    public static final String DEFAULT_GENERATE_JAVADOC_PROMPT = "你是一个高级Java开发专家。请为下面提供的Java代码生成规范的JavaDoc注释。\n" +
+            "请遵循以下规则：\n" +
+            "1. 为类、方法和重要字段添加完整的JavaDoc。\n" +
+            "2. 包含类/方法的功能描述、@param、@return、@throws等标签。\n" +
+            "3. 注释应该准确反映代码逻辑。\n" +
+            "4. 只输出添加了注释后的Java代码，不要包含多余的解释。\n\n" +
+            "下面是需要添加注释的代码：\n%s";
+
     public static IdeaSettings getInstance() {
         return ApplicationManager.getApplication().getService(IdeaSettings.class);
     }
@@ -271,6 +279,10 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         private List<PromptConfig> classPrompts;
         private List<PromptConfig> sequencePrompts;
         private List<PromptConfig> statePrompts;
+        private List<PromptConfig> explainPrompts;
+        private List<PromptConfig> reviewPrompts;
+        private List<PromptConfig> testPrompts;
+        private List<PromptConfig> javaDocPrompts;
 
         private String buildFlowJsonPrompt = DEFAULT_BUILD_FLOW_JSON_PROMPT;
         private String umlSequencePrompt = DEFAULT_UML_SEQUENCE_PROMPT;
@@ -279,6 +291,7 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         private String explainCodePrompt = DEFAULT_EXPLAIN_CODE_PROMPT;
         private String reviewCodePrompt = DEFAULT_REVIEW_CODE_PROMPT;
         private String generateTestPrompt = DEFAULT_GENERATE_TEST_PROMPT;
+        private String generateJavaDocPrompt = DEFAULT_GENERATE_JAVADOC_PROMPT;
         private List<String> relevantClassPatterns = Arrays.asList(
                 "*Impl", "*Service", "*Adapter", "*Api", "*Repository",
                 "*Mapper", "*Manager", "*Controller"
@@ -435,6 +448,70 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
             this.statePrompts = statePrompts;
         }
 
+        public List<PromptConfig> getExplainPrompts() {
+            if (explainPrompts == null || explainPrompts.isEmpty()) {
+                explainPrompts = new java.util.ArrayList<>();
+                if (explainCodePrompt != null && !explainCodePrompt.isEmpty()) {
+                    explainPrompts.add(new PromptConfig("Default", explainCodePrompt));
+                } else {
+                    explainPrompts.add(new PromptConfig("Default", DEFAULT_EXPLAIN_CODE_PROMPT));
+                }
+            }
+            return explainPrompts;
+        }
+
+        public void setExplainPrompts(List<PromptConfig> explainPrompts) {
+            this.explainPrompts = explainPrompts;
+        }
+
+        public List<PromptConfig> getReviewPrompts() {
+            if (reviewPrompts == null || reviewPrompts.isEmpty()) {
+                reviewPrompts = new java.util.ArrayList<>();
+                if (reviewCodePrompt != null && !reviewCodePrompt.isEmpty()) {
+                    reviewPrompts.add(new PromptConfig("Default", reviewCodePrompt));
+                } else {
+                    reviewPrompts.add(new PromptConfig("Default", DEFAULT_REVIEW_CODE_PROMPT));
+                }
+            }
+            return reviewPrompts;
+        }
+
+        public void setReviewPrompts(List<PromptConfig> reviewPrompts) {
+            this.reviewPrompts = reviewPrompts;
+        }
+
+        public List<PromptConfig> getTestPrompts() {
+            if (testPrompts == null || testPrompts.isEmpty()) {
+                testPrompts = new java.util.ArrayList<>();
+                if (generateTestPrompt != null && !generateTestPrompt.isEmpty()) {
+                    testPrompts.add(new PromptConfig("Default", generateTestPrompt));
+                } else {
+                    testPrompts.add(new PromptConfig("Default", DEFAULT_GENERATE_TEST_PROMPT));
+                }
+            }
+            return testPrompts;
+        }
+
+        public void setTestPrompts(List<PromptConfig> testPrompts) {
+            this.testPrompts = testPrompts;
+        }
+
+        public List<PromptConfig> getJavaDocPrompts() {
+            if (javaDocPrompts == null || javaDocPrompts.isEmpty()) {
+                javaDocPrompts = new java.util.ArrayList<>();
+                if (generateJavaDocPrompt != null && !generateJavaDocPrompt.isEmpty()) {
+                    javaDocPrompts.add(new PromptConfig("Default", generateJavaDocPrompt));
+                } else {
+                    javaDocPrompts.add(new PromptConfig("Default", DEFAULT_GENERATE_JAVADOC_PROMPT));
+                }
+            }
+            return javaDocPrompts;
+        }
+
+        public void setJavaDocPrompts(List<PromptConfig> javaDocPrompts) {
+            this.javaDocPrompts = javaDocPrompts;
+        }
+
         public String getBuildFlowJsonPrompt() {
             return this.buildFlowJsonPrompt;
         }
@@ -489,6 +566,14 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
 
         public void setGenerateTestPrompt(String generateTestPrompt) {
             this.generateTestPrompt = generateTestPrompt;
+        }
+
+        public String getGenerateJavaDocPrompt() {
+            return generateJavaDocPrompt;
+        }
+
+        public void setGenerateJavaDocPrompt(String generateJavaDocPrompt) {
+            this.generateJavaDocPrompt = generateJavaDocPrompt;
         }
 
         /**
