@@ -38,6 +38,13 @@ public class IdeaConfigurable implements Configurable {
     }
 
     @Override
+    public void reset() {
+        if (settingsComponent != null) {
+            settingsComponent.init(IdeaSettings.getInstance().getState());
+        }
+    }
+
+    @Override
     public void apply() {
         IdeaSettings.State state = IdeaSettings.getInstance().getState();
         // 保存多AI模型API密钥配置 (弃用，但为了避免空指针可以清空或保留空Map)
@@ -50,6 +57,10 @@ public class IdeaConfigurable implements Configurable {
         state.setClassPrompts(settingsComponent.getClassPrompts());
         state.setSequencePrompts(settingsComponent.getSequencePrompts());
         state.setStatePrompts(settingsComponent.getStatePrompts());
+        state.setExplainCodePrompts(settingsComponent.getExplainCodePrompts());
+        state.setReviewCodePrompts(settingsComponent.getReviewCodePrompts());
+        state.setGenerateTestPrompts(settingsComponent.getGenerateTestPrompts());
+        state.setOptimizeCodePrompts(settingsComponent.getOptimizeCodePrompts());
 
         state.setPlantumlPathVal(settingsComponent.getPlantumlPathValue());
         state.setRelevantClassPatterns(settingsComponent.getRelevantPatterns());

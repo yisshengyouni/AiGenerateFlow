@@ -1,10 +1,10 @@
 package com.huq.idea.flow.apidoc;
 
 import com.huq.idea.flow.apidoc.service.UmlFlowService;
+import com.huq.idea.flow.apidoc.ui.CodeAnalysisUIFactory;
 import com.huq.idea.flow.config.config.IdeaSettings;
 import com.huq.idea.flow.model.CallStack;
 import com.huq.idea.flow.model.MethodDescription;
-import com.huq.idea.flow.apidoc.ui.CodeAnalysisUIFactory;
 import com.huq.idea.flow.util.MethodUtils;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationType;
@@ -26,10 +26,10 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * Action to review Java code using AI
+ * Action to optimize Java code using AI
  */
-public class ReviewCodeAction extends AnAction implements DumbAware {
-    private static final Logger LOG = Logger.getInstance(ReviewCodeAction.class);
+public class OptimizeCodeAction extends AnAction implements DumbAware {
+    private static final Logger LOG = Logger.getInstance(OptimizeCodeAction.class);
 
     @Override
     public void actionPerformed(AnActionEvent e) {
@@ -42,7 +42,7 @@ public class ReviewCodeAction extends AnAction implements DumbAware {
         if (!(psiFile instanceof PsiJavaFile)) {
             Notifications.Bus.notify(new Notification(
                     "com.yt.huq.idea",
-                    "代码审查",
+                    "代码优化",
                     "此操作仅适用于Java文件",
                     NotificationType.ERROR),
                     project);
@@ -63,7 +63,7 @@ public class ReviewCodeAction extends AnAction implements DumbAware {
         if (method == null) {
             Notifications.Bus.notify(new Notification(
                     "com.yt.huq.idea",
-                    "代码审查",
+                    "代码优化",
                     "光标位置未找到方法",
                     NotificationType.ERROR),
                     project);
@@ -88,16 +88,16 @@ public class ReviewCodeAction extends AnAction implements DumbAware {
     private void showInitialDialog(Project project, CallStack callStack, String collectedCode, String title) {
         JTabbedPane tabbedPane = new JTabbedPane();
 
-        JPanel reviewTab = CodeAnalysisUIFactory.createCodeAnalysisPanel(
-                project, title, collectedCode, "代码审查", "点击\"审查代码\"按钮开始分析并获取优化建议...",
-                "审查代码", "你是一个高级Java开发专家和代码审查员。请提供专业、准确、可行的代码优化和重构建议。", 0.7,
+        JPanel optimizeTab = CodeAnalysisUIFactory.createCodeAnalysisPanel(
+                project, title, collectedCode, "代码优化", "点击\"优化代码\"按钮开始分析并获取优化后的代码...",
+                "优化代码", "你是一个高级Java开发专家和性能优化工程师。请提供性能优化、规范优化或可读性优化后的完整Java代码。如果包含Markdown代码块符号(如```java)，请去掉，只输出纯代码。", 0.4,
                 code -> {
-                    java.util.List<IdeaSettings.PromptConfig> configs = IdeaSettings.getInstance().getState().getReviewCodePrompts();
-                    String reviewPromptTemplate = configs.isEmpty() ? IdeaSettings.DEFAULT_REVIEW_CODE_PROMPT : configs.get(0).getPrompt();
-                    return String.format(reviewPromptTemplate, code);
+                    java.util.List<IdeaSettings.PromptConfig> configs = IdeaSettings.getInstance().getState().getOptimizeCodePrompts();
+                    String optimizePromptTemplate = configs.isEmpty() ? IdeaSettings.DEFAULT_OPTIMIZE_CODE_PROMPT : configs.get(0).getPrompt();
+                    return String.format(optimizePromptTemplate, code);
                 });
 
-        tabbedPane.addTab("代码审查", reviewTab);
+        tabbedPane.addTab("代码优化", optimizeTab);
 
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JLabel enhancedLabel = new JLabel();
@@ -109,7 +109,7 @@ public class ReviewCodeAction extends AnAction implements DumbAware {
         mainPanel.add(bottomPanel, BorderLayout.SOUTH);
 
         UmlFlowService plugin = project.getService(UmlFlowService.class);
-        mainPanel.setName(title + " (审查)");
+        mainPanel.setName(title + " (优化)");
         plugin.addFlow(mainPanel);
     }
 
