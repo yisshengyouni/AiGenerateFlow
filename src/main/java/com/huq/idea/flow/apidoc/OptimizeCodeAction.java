@@ -22,8 +22,8 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 
-public class ReviewCodeAction extends AnAction {
-    private static final Logger LOG = Logger.getInstance(ReviewCodeAction.class);
+public class OptimizeCodeAction extends AnAction {
+    private static final Logger LOG = Logger.getInstance(OptimizeCodeAction.class);
 
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {
@@ -57,14 +57,14 @@ public class ReviewCodeAction extends AnAction {
 
         JPanel panel = CodeAnalysisUIFactory.createPanel(
                 project,
-                "代码审查 - " + psiMethod.getName(),
+                "优化建议 - " + psiMethod.getName(),
                 collectedCode,
-                "审查代码",
-                "点击\"审查代码\"按钮开始分析并获取优化建议...",
-                "你是一个高级Java开发专家和代码审查员。请提供专业、准确、可行的代码优化和重构建议。",
+                "获取优化建议",
+                "点击\"获取优化建议\"按钮开始分析...",
+                "你是一个高级Java开发专家和架构师。请提供专业、准确的性能、可读性和架构上的优化建议。",
                 code -> {
-                    String reviewPromptTemplate = IdeaSettings.getInstance().getState().getReviewCodePrompt();
-                    return String.format(reviewPromptTemplate, code);
+                    String optimizePromptTemplate = IdeaSettings.getInstance().getState().getOptimizeCodePrompt();
+                    return String.format(optimizePromptTemplate, code);
                 }
         );
 
