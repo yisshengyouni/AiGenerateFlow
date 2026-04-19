@@ -158,6 +158,14 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
             "5. 回复使用Markdown格式排版，清晰易读。\n\n" +
             "下面是需要审查的代码：\n%s";
 
+    public static final String DEFAULT_OPTIMIZE_CODE_PROMPT = "你是一个高级Java开发专家和架构师。请分析下面提供的Java代码，并给出优化建议及优化后的代码。\n" +
+            "请遵循以下规则：\n" +
+            "1. 指出当前代码中可以优化的地方（如性能、可读性、设计模式、异常处理等）。\n" +
+            "2. 给出详细的优化理由。\n" +
+            "3. 提供优化后的完整Java代码。\n" +
+            "4. 回复使用Markdown格式排版，代码块需标明语言。\n\n" +
+            "下面是需要优化的代码：\n%s";
+
     public static final String DEFAULT_GENERATE_TEST_PROMPT = "你是一个高级Java开发专家和测试工程师。请基于下面提供的Java代码，生成JUnit 5的单元测试代码。\n" +
             "请遵循以下规则：\n" +
             "1. 生成的代码必须是完整的Java类，包含必要的import语句。\n" +
@@ -271,6 +279,11 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         private List<PromptConfig> classPrompts;
         private List<PromptConfig> sequencePrompts;
         private List<PromptConfig> statePrompts;
+        private List<PromptConfig> explainPrompts;
+        private List<PromptConfig> reviewPrompts;
+        private List<PromptConfig> testPrompts;
+        private List<PromptConfig> optimizePrompts;
+
 
         private String buildFlowJsonPrompt = DEFAULT_BUILD_FLOW_JSON_PROMPT;
         private String umlSequencePrompt = DEFAULT_UML_SEQUENCE_PROMPT;
@@ -279,6 +292,7 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         private String explainCodePrompt = DEFAULT_EXPLAIN_CODE_PROMPT;
         private String reviewCodePrompt = DEFAULT_REVIEW_CODE_PROMPT;
         private String generateTestPrompt = DEFAULT_GENERATE_TEST_PROMPT;
+        private String optimizeCodePrompt = DEFAULT_OPTIMIZE_CODE_PROMPT;
         private List<String> relevantClassPatterns = Arrays.asList(
                 "*Impl", "*Service", "*Adapter", "*Api", "*Repository",
                 "*Mapper", "*Manager", "*Controller"
@@ -434,6 +448,70 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         public void setStatePrompts(List<PromptConfig> statePrompts) {
             this.statePrompts = statePrompts;
         }
+        public List<PromptConfig> getExplainPrompts() {
+            if (explainPrompts == null || explainPrompts.isEmpty()) {
+                explainPrompts = new java.util.ArrayList<>();
+                if (explainCodePrompt != null && !explainCodePrompt.isEmpty()) {
+                    explainPrompts.add(new PromptConfig("Default", explainCodePrompt));
+                } else {
+                    explainPrompts.add(new PromptConfig("Default", DEFAULT_EXPLAIN_CODE_PROMPT));
+                }
+            }
+            return explainPrompts;
+        }
+
+        public void setExplainPrompts(List<PromptConfig> explainPrompts) {
+            this.explainPrompts = explainPrompts;
+        }
+
+        public List<PromptConfig> getReviewPrompts() {
+            if (reviewPrompts == null || reviewPrompts.isEmpty()) {
+                reviewPrompts = new java.util.ArrayList<>();
+                if (reviewCodePrompt != null && !reviewCodePrompt.isEmpty()) {
+                    reviewPrompts.add(new PromptConfig("Default", reviewCodePrompt));
+                } else {
+                    reviewPrompts.add(new PromptConfig("Default", DEFAULT_REVIEW_CODE_PROMPT));
+                }
+            }
+            return reviewPrompts;
+        }
+
+        public void setReviewPrompts(List<PromptConfig> reviewPrompts) {
+            this.reviewPrompts = reviewPrompts;
+        }
+
+        public List<PromptConfig> getTestPrompts() {
+            if (testPrompts == null || testPrompts.isEmpty()) {
+                testPrompts = new java.util.ArrayList<>();
+                if (generateTestPrompt != null && !generateTestPrompt.isEmpty()) {
+                    testPrompts.add(new PromptConfig("Default", generateTestPrompt));
+                } else {
+                    testPrompts.add(new PromptConfig("Default", DEFAULT_GENERATE_TEST_PROMPT));
+                }
+            }
+            return testPrompts;
+        }
+
+        public void setTestPrompts(List<PromptConfig> testPrompts) {
+            this.testPrompts = testPrompts;
+        }
+
+        public List<PromptConfig> getOptimizePrompts() {
+            if (optimizePrompts == null || optimizePrompts.isEmpty()) {
+                optimizePrompts = new java.util.ArrayList<>();
+                if (optimizeCodePrompt != null && !optimizeCodePrompt.isEmpty()) {
+                    optimizePrompts.add(new PromptConfig("Default", optimizeCodePrompt));
+                } else {
+                    optimizePrompts.add(new PromptConfig("Default", DEFAULT_OPTIMIZE_CODE_PROMPT));
+                }
+            }
+            return optimizePrompts;
+        }
+
+        public void setOptimizePrompts(List<PromptConfig> optimizePrompts) {
+            this.optimizePrompts = optimizePrompts;
+        }
+
 
         public String getBuildFlowJsonPrompt() {
             return this.buildFlowJsonPrompt;
@@ -490,6 +568,15 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
         public void setGenerateTestPrompt(String generateTestPrompt) {
             this.generateTestPrompt = generateTestPrompt;
         }
+
+        public String getOptimizeCodePrompt() {
+            return optimizeCodePrompt;
+        }
+
+        public void setOptimizeCodePrompt(String optimizeCodePrompt) {
+            this.optimizeCodePrompt = optimizeCodePrompt;
+        }
+
 
         /**
          * 获取指定AI提供商的API密钥

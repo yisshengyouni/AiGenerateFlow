@@ -1,11 +1,10 @@
 package com.huq.idea.flow.apidoc;
 
 import com.huq.idea.flow.apidoc.service.UmlFlowService;
+import com.huq.idea.flow.apidoc.ui.CodeAnalysisUIFactory;
 import com.huq.idea.flow.config.config.IdeaSettings;
 import com.huq.idea.flow.model.CallStack;
 import com.huq.idea.flow.model.MethodDescription;
-import com.huq.idea.flow.apidoc.ui.CodeAnalysisUIFactory;
-import com.huq.idea.flow.util.AiUtils;
 import com.huq.idea.flow.util.MethodUtils;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationType;
@@ -17,27 +16,14 @@ import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.LogicalPosition;
-import com.intellij.openapi.progress.PerformInBackgroundOption;
-import com.intellij.openapi.progress.ProgressIndicator;
-import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.ui.ComboBox;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiJavaFile;
 import com.intellij.psi.PsiMethod;
-import org.jetbrains.annotations.NotNull;
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.datatransfer.Clipboard;
-import java.awt.datatransfer.StringSelection;
-
-/**
- * Action to generate JUnit 5 tests for Java code using AI
- */
-public class GenerateUnitTestAction extends AnAction implements DumbAware {
-    private static final Logger LOG = Logger.getInstance(GenerateUnitTestAction.class);
+public class OptimizeCodeAction extends AnAction implements DumbAware {
+    private static final Logger LOG = Logger.getInstance(OptimizeCodeAction.class);
 
     @Override
     public void actionPerformed(AnActionEvent e) {
@@ -50,7 +36,7 @@ public class GenerateUnitTestAction extends AnAction implements DumbAware {
         if (!(psiFile instanceof PsiJavaFile)) {
             Notifications.Bus.notify(new Notification(
                     "com.yt.huq.idea",
-                    "生成单元测试",
+                    "优化代码",
                     "此操作仅适用于Java文件",
                     NotificationType.ERROR),
                     project);
@@ -71,7 +57,7 @@ public class GenerateUnitTestAction extends AnAction implements DumbAware {
         if (method == null) {
             Notifications.Bus.notify(new Notification(
                     "com.yt.huq.idea",
-                    "生成单元测试",
+                    "优化代码",
                     "光标位置未找到方法",
                     NotificationType.ERROR),
                     project);
@@ -85,49 +71,29 @@ public class GenerateUnitTestAction extends AnAction implements DumbAware {
 
         String collectedCode = collectCodeFromCallStack(callStack);
 
-        String className = ReadAction.compute(() -> method.getContainingClass() != null ? method.getContainingClass().getName() : "Unknown");
-        String methodName = ReadAction.compute(method::getName);
-        String title = className + "." + methodName;
+        String className = method.getContainingClass() != null ? method.getContainingClass().getName() : "Unknown";
+        String title = className + "." + method.getName();
 
         CodeAnalysisUIFactory.showInitialDialog(project, collectedCode, title, new CodeAnalysisUIFactory.AnalysisConfigProvider() {
             @Override
             public String getPrompt(String code) {
-                String template = IdeaSettings.getInstance().getState().getGenerateTestPrompt();
+                String template = IdeaSettings.getInstance().getState().getOptimizeCodePrompt();
                 return String.format(template, code);
             }
 
             @Override
             public String getSystemMessage() {
-                return "你是一个高级Java开发专家和测试工程师。请提供完整、准确的单元测试代码。";
+                return "你是一个高级Java开发专家和架构师。请提供专业、准确、可行的代码优化和重构建议及优化后的代码。";
             }
 
             @Override
             public String getActionName() {
-                return "生成测试";
+                return "优化代码";
             }
 
             @Override
             public String getInitialMessage() {
-                return "点击\"生成测试\"按钮开始分析...";
-            }
-
-            @Override
-            public boolean isEditableResult() {
-                return true;
-            }
-
-            @Override
-            public boolean isLineWrapResult() {
-                return false;
-            }
-
-            @Override
-            public String postProcessResponse(String response) {
-                if (response != null) {
-                    return response.replaceAll("```java\\n?", "")
-                                   .replaceAll("```\\n?", "");
-                }
-                return response;
+                return "点击\"优化代码\"按钮开始分析...";
             }
         });
     }
