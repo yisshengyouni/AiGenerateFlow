@@ -51,6 +51,12 @@ public class IdeaConfigurable implements Configurable {
         state.setSequencePrompts(settingsComponent.getSequencePrompts());
         state.setStatePrompts(settingsComponent.getStatePrompts());
 
+        state.setExplainPrompts(settingsComponent.getExplainPrompts());
+        state.setReviewPrompts(settingsComponent.getReviewPrompts());
+        state.setTestPrompts(settingsComponent.getTestPrompts());
+        state.setOptimizePrompts(settingsComponent.getOptimizePrompts());
+
+
         state.setPlantumlPathVal(settingsComponent.getPlantumlPathValue());
         state.setRelevantClassPatterns(settingsComponent.getRelevantPatterns());
         state.setExcludedClassPatterns(settingsComponent.getExcludedPatterns());
