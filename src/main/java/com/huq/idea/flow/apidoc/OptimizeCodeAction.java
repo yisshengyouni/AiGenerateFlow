@@ -24,10 +24,10 @@ import javax.swing.*;
 import java.util.List;
 
 /**
- * Action to generate JUnit 5 tests using AI
+ * Action to optimize Java code using AI
  */
-public class GenerateUnitTestAction extends AnAction implements DumbAware {
-    private static final Logger LOG = Logger.getInstance(GenerateUnitTestAction.class);
+public class OptimizeCodeAction extends AnAction implements DumbAware {
+    private static final Logger LOG = Logger.getInstance(OptimizeCodeAction.class);
 
     @Override
     public void actionPerformed(AnActionEvent e) {
@@ -40,7 +40,7 @@ public class GenerateUnitTestAction extends AnAction implements DumbAware {
         if (!(psiFile instanceof PsiJavaFile)) {
             Notifications.Bus.notify(new Notification(
                     "com.yt.huq.idea",
-                    "生成单元测试",
+                    "优化代码",
                     "此操作仅适用于Java文件",
                     NotificationType.ERROR),
                     project);
@@ -61,7 +61,7 @@ public class GenerateUnitTestAction extends AnAction implements DumbAware {
         if (method == null) {
             Notifications.Bus.notify(new Notification(
                     "com.yt.huq.idea",
-                    "生成单元测试",
+                    "优化代码",
                     "光标位置未找到方法",
                     NotificationType.ERROR),
                     project);
@@ -84,33 +84,33 @@ public class GenerateUnitTestAction extends AnAction implements DumbAware {
 
     private void showInitialDialog(Project project, CallStack callStack, String collectedCode, String title) {
         CodeAnalysisUIFactory.PromptProvider promptProvider = code -> {
-            List<com.huq.idea.flow.config.config.IdeaSettings.PromptConfig> prompts = com.huq.idea.flow.config.config.IdeaSettings.getInstance().getState().getTestPrompts();
+            List<com.huq.idea.flow.config.config.IdeaSettings.PromptConfig> prompts = com.huq.idea.flow.config.config.IdeaSettings.getInstance().getState().getOptimizePrompts();
             String promptTemplate = prompts != null && !prompts.isEmpty() ? prompts.get(0).getPrompt() : null;
             if (promptTemplate == null || promptTemplate.isEmpty()) {
-                promptTemplate = com.huq.idea.flow.config.config.IdeaSettings.DEFAULT_GENERATE_TEST_PROMPT;
+                promptTemplate = com.huq.idea.flow.config.config.IdeaSettings.DEFAULT_OPTIMIZE_CODE_PROMPT;
             }
             return String.format(promptTemplate, code);
         };
 
-        JPanel testTab = CodeAnalysisUIFactory.createAnalysisTab(
+        JPanel optimizeTab = CodeAnalysisUIFactory.createAnalysisTab(
             project,
             collectedCode,
-            "点击\"生成测试代码\"按钮开始生成...",
-            "生成测试代码",
-            "正在生成单元测试...",
-            "你是一个高级Java开发专家和测试工程师。请提供高质量、可以直接运行的JUnit 5单元测试代码。如果包含Markdown代码块符号(如```java)，请去掉，只输出纯代码。",
+            "点击\"优化代码\"按钮开始分析并获取优化建议...",
+            "优化代码",
+            "正在分析代码结构并生成优化建议...",
+            "你是一个高级Java开发专家和架构师。请仔细分析提供的Java代码，指出可以优化的点（如性能、可读性、可维护性等），并提供优化后的代码。",
             promptProvider,
             true
         );
 
         JTabbedPane tabbedPane = new JTabbedPane();
-        tabbedPane.addTab("单元测试", testTab);
+        tabbedPane.addTab("代码优化", optimizeTab);
 
         JPanel mainPanel = new JPanel(new java.awt.BorderLayout());
         mainPanel.add(tabbedPane, java.awt.BorderLayout.CENTER);
 
         UmlFlowService plugin = project.getService(UmlFlowService.class);
-        mainPanel.setName(title + " (测试)");
+        mainPanel.setName(title + " (优化)");
         plugin.addFlow(mainPanel);
     }
 }
