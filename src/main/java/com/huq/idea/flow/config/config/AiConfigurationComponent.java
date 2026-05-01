@@ -27,8 +27,13 @@ public class AiConfigurationComponent {
     private JComboBox<String> diagramTypeComboBox;
     private List<IdeaSettings.PromptConfig> flowPromptConfigs;
     private List<IdeaSettings.PromptConfig> classPromptConfigs;
-    private List<IdeaSettings.PromptConfig> sequencePromptConfigs;
+        private List<IdeaSettings.PromptConfig> sequencePromptConfigs;
     private List<IdeaSettings.PromptConfig> statePromptConfigs;
+    private List<IdeaSettings.PromptConfig> explainPromptConfigs;
+    private List<IdeaSettings.PromptConfig> reviewPromptConfigs;
+    private List<IdeaSettings.PromptConfig> testPromptConfigs;
+    private List<IdeaSettings.PromptConfig> optimizePromptConfigs;
+
     private int currentPromptIndex = -1;
     private int currentDiagramTypeIndex = 0;
     private JTextArea relevantPatternsArea;
@@ -358,7 +363,16 @@ public class AiConfigurationComponent {
         // Top Panel: Diagram Type Selector
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         topPanel.add(new JLabel("图表类型: "));
-        diagramTypeComboBox = new JComboBox<>(new String[]{"流程图 (Flow Diagram)", "类图 (Class Diagram)", "时序图 (Sequence Diagram)", "状态图 (State Diagram)"});
+                diagramTypeComboBox = new JComboBox<>(new String[]{
+            "流程图 (Flow Diagram)",
+            "类图 (Class Diagram)",
+            "时序图 (Sequence Diagram)",
+            "状态图 (State Diagram)",
+            "解释代码 (Explain Code)",
+            "审查代码 (Review Code)",
+            "生成测试 (Generate Test)",
+            "优化代码 (Optimize Code)"
+        });
         topPanel.add(diagramTypeComboBox);
         promptConfigPanel.add(topPanel, BorderLayout.NORTH);
 
@@ -511,12 +525,16 @@ public class AiConfigurationComponent {
         }
     }
 
-    private List<IdeaSettings.PromptConfig> getActivePromptConfigs() {
+        private List<IdeaSettings.PromptConfig> getActivePromptConfigs() {
         int index = currentDiagramTypeIndex;
         if (index == 0) return flowPromptConfigs;
         else if (index == 1) return classPromptConfigs;
         else if (index == 2) return sequencePromptConfigs;
         else if (index == 3) return statePromptConfigs;
+        else if (index == 4) return explainPromptConfigs;
+        else if (index == 5) return reviewPromptConfigs;
+        else if (index == 6) return testPromptConfigs;
+        else if (index == 7) return optimizePromptConfigs;
         return flowPromptConfigs;
     }
     
@@ -687,6 +705,27 @@ public class AiConfigurationComponent {
         saveCurrentPrompt();
         return statePromptConfigs;
     }
+
+    public List<IdeaSettings.PromptConfig> getExplainPrompts() {
+        saveCurrentPrompt();
+        return explainPromptConfigs;
+    }
+
+    public List<IdeaSettings.PromptConfig> getReviewPrompts() {
+        saveCurrentPrompt();
+        return reviewPromptConfigs;
+    }
+
+    public List<IdeaSettings.PromptConfig> getTestPrompts() {
+        saveCurrentPrompt();
+        return testPromptConfigs;
+    }
+
+    public List<IdeaSettings.PromptConfig> getOptimizePrompts() {
+        saveCurrentPrompt();
+        return optimizePromptConfigs;
+    }
+
 
 
     public String getPlantumlPathValue() {

@@ -34,7 +34,37 @@ public class IdeaConfigurable implements Configurable {
 
     @Override
     public boolean isModified() {
-        return true;
+        IdeaSettings.State state = IdeaSettings.getInstance().getState();
+        boolean modified = false;
+
+        modified |= !java.util.Objects.equals(state.getBuildFlowPrompt(), settingsComponent.getBuildFlowPrompt());
+        modified |= !java.util.Objects.equals(state.getPlantumlPathVal(), settingsComponent.getPlantumlPathValue());
+
+        modified |= !java.util.Objects.equals(state.getRelevantClassPatterns(), settingsComponent.getRelevantPatterns());
+        modified |= !java.util.Objects.equals(state.getExcludedClassPatterns(), settingsComponent.getExcludedPatterns());
+        modified |= !java.util.Objects.equals(state.getClassRelevantClassPatterns(), settingsComponent.getClassRelevantPatterns());
+        modified |= !java.util.Objects.equals(state.getClassExcludedClassPatterns(), settingsComponent.getClassExcludedPatterns());
+        modified |= state.getClassDiagramDepth() != settingsComponent.getClassDiagramDepth();
+        modified |= state.isIncludeLibrarySources() != settingsComponent.isIncludeLibrarySources();
+
+        modified |= !state.getFlowPrompts().equals(settingsComponent.getFlowPrompts());
+        modified |= !state.getClassPrompts().equals(settingsComponent.getClassPrompts());
+        modified |= !state.getSequencePrompts().equals(settingsComponent.getSequencePrompts());
+        modified |= !state.getStatePrompts().equals(settingsComponent.getStatePrompts());
+
+        modified |= !state.getExplainPrompts().equals(settingsComponent.getExplainPrompts());
+        modified |= !state.getReviewPrompts().equals(settingsComponent.getReviewPrompts());
+        modified |= !state.getTestPrompts().equals(settingsComponent.getTestPrompts());
+        modified |= !state.getOptimizePrompts().equals(settingsComponent.getOptimizePrompts());
+
+        return modified;
+    }
+
+    @Override
+    public void reset() {
+        if (settingsComponent != null) {
+            settingsComponent.init(IdeaSettings.getInstance().getState());
+        }
     }
 
     @Override
@@ -48,8 +78,13 @@ public class IdeaConfigurable implements Configurable {
         state.setBuildFlowPrompt(settingsComponent.getBuildFlowPrompt());
         state.setFlowPrompts(settingsComponent.getFlowPrompts());
         state.setClassPrompts(settingsComponent.getClassPrompts());
-        state.setSequencePrompts(settingsComponent.getSequencePrompts());
+                state.setSequencePrompts(settingsComponent.getSequencePrompts());
         state.setStatePrompts(settingsComponent.getStatePrompts());
+        state.setExplainPrompts(settingsComponent.getExplainPrompts());
+        state.setReviewPrompts(settingsComponent.getReviewPrompts());
+        state.setTestPrompts(settingsComponent.getTestPrompts());
+        state.setOptimizePrompts(settingsComponent.getOptimizePrompts());
+
 
         state.setPlantumlPathVal(settingsComponent.getPlantumlPathValue());
         state.setRelevantClassPatterns(settingsComponent.getRelevantPatterns());
