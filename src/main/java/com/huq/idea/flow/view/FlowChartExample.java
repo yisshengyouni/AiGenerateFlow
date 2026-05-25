@@ -7,11 +7,13 @@ import com.mxgraph.util.mxEvent;
 import com.mxgraph.util.mxEventObject;
 import com.mxgraph.util.mxEventSource;
 import com.mxgraph.view.mxGraph;
+import com.intellij.openapi.diagnostic.Logger;
 import org.jgrapht.Graphs;
 
 import javax.swing.*;
 
 public class FlowChartExample extends JFrame {
+    private static final Logger LOG = Logger.getInstance(FlowChartExample.class);
     public FlowChartExample() {
         mxGraph graph = new mxGraph() {
             @Override
@@ -54,9 +56,9 @@ public class FlowChartExample extends JFrame {
                     boolean collapse = (boolean) evt.getProperty("collapse");
                     for (Object cell : cells) {
                         if (collapse) {
-                            System.out.println("Collapsing: " + graph.getLabel(cell));
+                            LOG.info("Collapsing: " + graph.getLabel(cell));
                         } else {
-                            System.out.println("Expanding: " + graph.getLabel(cell));
+                            LOG.info("Expanding: " + graph.getLabel(cell));
                         }
                     }
                 }

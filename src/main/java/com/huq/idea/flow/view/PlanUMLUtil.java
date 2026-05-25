@@ -289,9 +289,11 @@ public class PlanUMLUtil {
         return topStack;
                 """;
         final BlockStmt blockStmt = createBlockStmt(codeSnippet);
-        System.out.println(blockStmt.toString());
-        StringBuilder sb= new StringBuilder();
-        createPlantUml(sb, blockStmt, true);
-        System.out.println(sb);
+        if (blockStmt != null) {
+            LOG.info(blockStmt.toString());
+            StringBuilder sb = new StringBuilder();
+            createPlantUml(sb, blockStmt, true);
+            LOG.info(sb.toString());
+        }
     }
 }
