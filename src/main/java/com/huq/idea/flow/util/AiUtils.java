@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class AiUtils {
 
-    public static final Logger log = Logger.getInstance(AiUtils.class);
+    private static final Logger LOG = Logger.getInstance(AiUtils.class);
     public static ConnectionPool connectionPool = new ConnectionPool(10, 5, TimeUnit.MINUTES);
     private static OkHttpClient client;
 
@@ -141,7 +141,7 @@ public class AiUtils {
      */
     public static AiResponse callAi(String prompt, AiConfig config) {
         if (config.getApiKey() == null || config.getApiKey().trim().isEmpty()) {
-            log.error(config.getProviderName() + " API key is not configured");
+            LOG.error(config.getProviderName() + " API key is not configured");
             return new AiResponse(false, null, "API key not configured", 0, null);
         }
 
@@ -160,7 +160,7 @@ public class AiUtils {
                             System.currentTimeMillis() - startTime, null);
             }
         } catch (Exception e) {
-            log.error("AI call failed", e);
+            LOG.error("AI call failed", e);
             return new AiResponse(false, null, e.getMessage(), System.currentTimeMillis() - startTime, null);
         }
     }
@@ -190,7 +190,7 @@ public class AiUtils {
         requestJson.addProperty("max_tokens", config.getMaxTokens());
         requestJson.addProperty("stream", false);
 
-        log.info("Request to " + config.getProviderName() + ": " + requestJson.toString());
+        LOG.info("Request to " + config.getProviderName() + ": " + requestJson.toString());
 
         MediaType mediaType = MediaType.parse("application/json");
         RequestBody body = RequestBody.create(mediaType, requestJson.toString());
@@ -205,7 +205,7 @@ public class AiUtils {
 
         Response response = getOkHttpClient().newCall(request).execute();
         String responseBody = response.body().string();
-        log.info("Response from " + config.getProviderName() + ": " + responseBody);
+        LOG.info("Response from " + config.getProviderName() + ": " + responseBody);
 
         if (!response.isSuccessful()) {
             return new AiResponse(false, null, "HTTP " + response.code() + ": " + responseBody,
@@ -228,7 +228,7 @@ public class AiUtils {
                 .get("content").getAsString();
 
         long responseTime = System.currentTimeMillis() - startTime;
-        log.info(config.getProviderName() + " 消耗 token: " + (usage != null ? usage.toString() : "N/A") +
+        LOG.info(config.getProviderName() + " 消耗 token: " + (usage != null ? usage.toString() : "N/A") +
                 ", 耗时：" + responseTime + " ms");
 
         return new AiResponse(true, content, null, responseTime, usage);
@@ -264,7 +264,7 @@ public class AiUtils {
 
         Response response = getOkHttpClient().newCall(request).execute();
         String responseBody = response.body().string();
-        System.out.println(responseBody);
+        LOG.info("Response from " + config.getProviderName() + ": " + responseBody);
 
         if (!response.isSuccessful()) {
             return new AiResponse(false, null, "HTTP " + response.code() + ": " + responseBody,
@@ -322,7 +322,7 @@ public class AiUtils {
 
         Response response = getOkHttpClient().newCall(request).execute();
         String responseBody = response.body().string();
-        System.out.println(responseBody);
+        LOG.info("Response from " + config.getProviderName() + ": " + responseBody);
 
         if (!response.isSuccessful()) {
             return new AiResponse(false, null, "HTTP " + response.code() + ": " + responseBody,
@@ -339,7 +339,7 @@ public class AiUtils {
             return new AiResponse(true, content, null, System.currentTimeMillis() - startTime,
                     jsonObject.has("usage") ? jsonObject.get("usage") : null);
         }catch (Exception e) {
-            log.error("AI call failed, responseBody : \n "+responseBody, e);
+            LOG.error("AI call failed, responseBody : \n " + responseBody, e);
             return new AiResponse(true, responseBody, null, System.currentTimeMillis() - startTime,
                     jsonObject.has("usage") ? jsonObject.get("usage") : null);
         }
