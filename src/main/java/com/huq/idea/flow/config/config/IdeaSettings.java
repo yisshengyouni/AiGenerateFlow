@@ -40,6 +40,7 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
             "5. 使用**颜色编码区分**不同类型的处理路径（正常流程、验证失败、系统异常等）\n" +
             "6. 对于复杂的条件判断，提供**清晰的分支标签**说明判断条件\n" +
             "7. **只输出可直接渲染的PlantUML代码** \n" +
+            "8. **进行语义提炼**：不要机械地把每一行代码变成一个节点，而是进行高维度的业务抽象。例如，将循环体或多个基础操作抽象为具有业务含义的'批量处理'或类似节点，避免图表过于密集和丑陋。\n" +
             "\n" +
             "## 语法规范（必须遵守）\n" +
             "\n" +
@@ -120,7 +121,8 @@ public class IdeaSettings implements PersistentStateComponent<IdeaSettings.State
     public static final String DEFAULT_UML_SEQUENCE_PROMPT = "你是一个UML时序图生成专家。请基于下面提供的Java方法调用链相关的代码，生成一个PlantUML格式的UML时序图。\\n\\n请遵循以下规则：\\n1. \n" +
             "      严格使用PlantUML语法。\\n2. 以 `@startuml` 开始，以 `@enduml` 结束。\\n3. 将每个参与交互的类或组件识别为参与者(participant)。\\n4. 准确地表示方法调用和返回关系，使用 `->` 表示调用，使用 \n" +
             "      `-->` 表示返回。\\n5. 如果代码中有循环或条件判断，请使用 `loop`、`alt`、`opt` 等UML片段来表示。\\n6. 在调用箭头上清晰地标出方法名和参数。\\n7. \n" +
-            "      不要包含与代码无关的注释或解释。\\n\\n下面是需要分析的代码：\\n%s";
+            "      不要包含与代码无关的注释或解释。\\n8. \\n" +
+            "      **进行语义提炼**：不要机械地把每一行代码或微小的内部方法调用都变成一次交互，而是进行高维度的业务抽象，合并细碎的调用，避免图表过于密集和丑陋。\\n\\n下面是需要分析的代码：\\n%s";
 
     public static final String DEFAULT_CLASS_DIAGRAM_PROMPT = "你是一个UML类图生成专家。请基于下面提供的Java类相关的代码，生成一个PlantUML格式的UML类图。\n" +
             "请遵循以下规则：\n" +
