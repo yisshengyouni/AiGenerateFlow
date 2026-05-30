@@ -212,7 +212,7 @@ public class GenerateUnitTestAction extends AnAction implements DumbAware {
                     indicator.setText("正在生成单元测试...");
                     indicator.setIndeterminate(true);
 
-                    String generateTestPromptTemplate = IdeaSettings.getInstance().getState().getGenerateTestPrompt();
+                    String generateTestPromptTemplate = IdeaSettings.getInstance().getState().getTestPrompts().isEmpty() ? "" : IdeaSettings.getInstance().getState().getTestPrompts().get(0).getPrompt();
                     String prompt = String.format(generateTestPromptTemplate, codeArea.getText());
 
                     AiUtils.AiConfig config = new AiUtils.AiConfig(selectedProvider, selectedModel);

@@ -357,8 +357,8 @@ public class AiConfigurationComponent {
 
         // Top Panel: Diagram Type Selector
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        topPanel.add(new JLabel("图表类型: "));
-        diagramTypeComboBox = new JComboBox<>(new String[]{"流程图 (Flow Diagram)", "类图 (Class Diagram)", "时序图 (Sequence Diagram)", "状态图 (State Diagram)"});
+        topPanel.add(new JLabel("功能类型 (Functional Type): "));
+        diagramTypeComboBox = new JComboBox<>(new String[]{"流程图 (Flow Diagram)", "类图 (Class Diagram)", "时序图 (Sequence Diagram)", "状态图 (State Diagram)", "解释代码 (Explain Code)", "代码审查 (Code Review)", "生成单元测试 (Generate Unit Test)"});
         topPanel.add(diagramTypeComboBox);
         promptConfigPanel.add(topPanel, BorderLayout.NORTH);
 
@@ -443,6 +443,9 @@ public class AiConfigurationComponent {
                 else if (typeIndex == 1) defaultPrompt = IdeaSettings.DEFAULT_CLASS_DIAGRAM_PROMPT;
                 else if (typeIndex == 2) defaultPrompt = IdeaSettings.DEFAULT_UML_SEQUENCE_PROMPT;
                 else if (typeIndex == 3) defaultPrompt = IdeaSettings.DEFAULT_STATE_DIAGRAM_PROMPT;
+                else if (typeIndex == 4) defaultPrompt = IdeaSettings.DEFAULT_EXPLAIN_CODE_PROMPT;
+                else if (typeIndex == 5) defaultPrompt = IdeaSettings.DEFAULT_REVIEW_CODE_PROMPT;
+                else if (typeIndex == 6) defaultPrompt = IdeaSettings.DEFAULT_GENERATE_TEST_PROMPT;
 
                 IdeaSettings.PromptConfig newConfig = new IdeaSettings.PromptConfig(name.trim(), defaultPrompt);
                 List<IdeaSettings.PromptConfig> activeConfigs = getActivePromptConfigs();
@@ -517,6 +520,9 @@ public class AiConfigurationComponent {
         else if (index == 1) return classPromptConfigs;
         else if (index == 2) return sequencePromptConfigs;
         else if (index == 3) return statePromptConfigs;
+        else if (index == 4) return IdeaSettings.getInstance().getState().getExplainPrompts();
+        else if (index == 5) return IdeaSettings.getInstance().getState().getReviewPrompts();
+        else if (index == 6) return IdeaSettings.getInstance().getState().getTestPrompts();
         return flowPromptConfigs;
     }
     
