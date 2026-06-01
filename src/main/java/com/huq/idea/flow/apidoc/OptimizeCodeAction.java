@@ -35,8 +35,8 @@ import java.awt.datatransfer.StringSelection;
 /**
  * Action to review Java code using AI
  */
-public class ReviewCodeAction extends AnAction implements DumbAware {
-    private static final Logger LOG = Logger.getInstance(ReviewCodeAction.class);
+public class OptimizeCodeAction extends AnAction implements DumbAware {
+    private static final Logger LOG = Logger.getInstance(OptimizeCodeAction.class);
 
     @Override
     public void actionPerformed(AnActionEvent e) {
@@ -49,7 +49,7 @@ public class ReviewCodeAction extends AnAction implements DumbAware {
         if (!(psiFile instanceof PsiJavaFile)) {
             Notifications.Bus.notify(new Notification(
                     "com.yt.huq.idea",
-                    "代码审查",
+                    "优化代码",
                     "此操作仅适用于Java文件",
                     NotificationType.ERROR),
                     project);
@@ -70,7 +70,7 @@ public class ReviewCodeAction extends AnAction implements DumbAware {
         if (method == null) {
             Notifications.Bus.notify(new Notification(
                     "com.yt.huq.idea",
-                    "代码审查",
+                    "优化代码",
                     "光标位置未找到方法",
                     NotificationType.ERROR),
                     project);
@@ -90,9 +90,9 @@ public class ReviewCodeAction extends AnAction implements DumbAware {
 
 
         SwingUtilities.invokeLater(() ->
-            com.huq.idea.flow.apidoc.ui.CodeAnalysisUIFactory.showInitialDialog(project, collectedCode, "代码审查: " + title, "代码审查", (code, provider, model) -> {
-                                java.util.List<com.huq.idea.flow.config.config.IdeaSettings.PromptConfig> prompts = com.huq.idea.flow.config.config.IdeaSettings.getInstance().getState().getReviewPrompts();
-                String promptTemplate = prompts != null && !prompts.isEmpty() ? prompts.get(0).getPrompt() : com.huq.idea.flow.config.config.IdeaSettings.getInstance().getState().getReviewCodePrompt();
+            com.huq.idea.flow.apidoc.ui.CodeAnalysisUIFactory.showInitialDialog(project, collectedCode, "优化代码: " + title, "优化代码", (code, provider, model) -> {
+                                java.util.List<com.huq.idea.flow.config.config.IdeaSettings.PromptConfig> prompts = com.huq.idea.flow.config.config.IdeaSettings.getInstance().getState().getOptimizePrompts();
+                String promptTemplate = prompts != null && !prompts.isEmpty() ? prompts.get(0).getPrompt() : com.huq.idea.flow.config.config.IdeaSettings.getInstance().getState().getOptimizeCodePrompt();
                 String prompt = String.format(promptTemplate, code);
 
                 com.huq.idea.flow.util.AiUtils.AiConfig config = new com.huq.idea.flow.util.AiUtils.AiConfig(provider, model);
@@ -100,7 +100,7 @@ public class ReviewCodeAction extends AnAction implements DumbAware {
                     throw new Exception("API密钥未配置");
                 }
 
-                config.setSystemMessage("你是一个高级Java开发专家和代码审查员。请提供专业、准确、可行的代码优化和重构建议。")
+                config.setSystemMessage("你是一个高级Java开发专家。请提供优化后的Java代码，确保代码更高效、更优雅。")
                       .setTemperature(0.7)
                       .setMaxTokens(8000);
 
