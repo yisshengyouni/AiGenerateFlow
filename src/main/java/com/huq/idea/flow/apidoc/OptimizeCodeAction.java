@@ -24,8 +24,8 @@ import com.intellij.psi.PsiMethod;
 import java.util.HashSet;
 import java.util.List;
 
-public class ExplainCodeAction extends AnAction implements DumbAware {
-    private static final Logger LOG = Logger.getInstance(ExplainCodeAction.class);
+public class OptimizeCodeAction extends AnAction implements DumbAware {
+    private static final Logger LOG = Logger.getInstance(OptimizeCodeAction.class);
 
     @Override
     public void actionPerformed(AnActionEvent e) {
@@ -35,7 +35,7 @@ public class ExplainCodeAction extends AnAction implements DumbAware {
         PsiFile psiFile = e.getData(LangDataKeys.PSI_FILE);
         if (!(psiFile instanceof PsiJavaFile)) {
             Notifications.Bus.notify(new Notification(
-                    "com.yt.huq.idea", "代码解释", "此操作仅适用于Java文件", NotificationType.ERROR), project);
+                    "com.yt.huq.idea", "代码优化", "此操作仅适用于Java文件", NotificationType.ERROR), project);
             return;
         }
 
@@ -50,7 +50,7 @@ public class ExplainCodeAction extends AnAction implements DumbAware {
 
         if (currentMethod == null) {
             Notifications.Bus.notify(new Notification(
-                    "com.yt.huq.idea", "代码解释", "光标位置未找到方法", NotificationType.ERROR), project);
+                    "com.yt.huq.idea", "代码优化", "光标位置未找到方法", NotificationType.ERROR), project);
             return;
         }
 
@@ -65,35 +65,35 @@ public class ExplainCodeAction extends AnAction implements DumbAware {
         CodeAnalysisUIFactory.CodeAnalysisAction actionConfig = new CodeAnalysisUIFactory.CodeAnalysisAction() {
             @Override
             public String getPromptTemplate() {
-                List<IdeaSettings.PromptConfig> prompts = IdeaSettings.getInstance().getState().getExplainPrompts();
-                return prompts.isEmpty() ? IdeaSettings.DEFAULT_EXPLAIN_CODE_PROMPT : prompts.get(0).getPrompt();
+                List<IdeaSettings.PromptConfig> prompts = IdeaSettings.getInstance().getState().getOptimizePrompts();
+                return prompts.isEmpty() ? IdeaSettings.DEFAULT_OPTIMIZE_CODE_PROMPT : prompts.get(0).getPrompt();
             }
 
             @Override
             public String getSystemMessage() {
-                return "你是一个高级Java开发专家和架构师。请提供专业、准确、易懂的代码解释。";
+                return "你是一个高级Java开发专家。请提供专业、详细的代码优化、重构以及性能提升建议。";
             }
 
             @Override
-            public double getTemperature() { return 0.7; }
+            public double getTemperature() { return 0.5; }
 
             @Override
-            public String getButtonText() { return "解释代码"; }
+            public String getButtonText() { return "优化代码"; }
 
             @Override
-            public String getWaitText() { return "分析中..."; }
+            public String getWaitText() { return "优化分析中..."; }
 
             @Override
-            public String getActionName() { return "代码解释"; }
+            public String getActionName() { return "代码优化"; }
 
             @Override
-            public String getEmptyResultText() { return "点击\"解释代码\"按钮开始分析..."; }
+            public String getEmptyResultText() { return "点击\"优化代码\"按钮开始分析并获取优化建议..."; }
 
             @Override
             public boolean isCleanupMarkdown() { return false; }
         };
 
-        CodeAnalysisUIFactory.showAnalysisDialog(project, collectedCode, "解释代码: " + title, actionConfig);
+        CodeAnalysisUIFactory.showAnalysisDialog(project, collectedCode, "优化代码: " + title, actionConfig);
     }
 
     private String collectCodeFromCallStack(CallStack callStack) {
