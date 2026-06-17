@@ -4,6 +4,7 @@ import com.huq.idea.flow.apidoc.service.UmlFlowService;
 import com.huq.idea.flow.config.config.IdeaSettings;
 import com.huq.idea.flow.model.CallStack;
 import com.huq.idea.flow.model.MethodDescription;
+import com.huq.idea.flow.apidoc.ui.CodeAnalysisUIFactory;
 import com.huq.idea.flow.util.AiUtils;
 import com.huq.idea.flow.util.MethodUtils;
 import com.intellij.notification.Notification;
@@ -88,211 +89,28 @@ public class ReviewCodeAction extends AnAction implements DumbAware {
         String methodName = ReadAction.compute(method::getName);
         String title = className + "." + methodName;
 
-        SwingUtilities.invokeLater(() ->
-            showInitialDialog(project, callStack, collectedCode, title));
-    }
-
-    private void showInitialDialog(Project project, CallStack callStack, String collectedCode, String title) {
-        JTabbedPane tabbedPane = new JTabbedPane();
-
-        JPanel reviewTab = createReviewTab(project, title, collectedCode);
-        tabbedPane.addTab("代码审查", reviewTab);
-
-        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JLabel enhancedLabel = new JLabel();
-        enhancedLabel.setForeground(Color.BLUE);
-        bottomPanel.add(enhancedLabel);
-
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.add(tabbedPane, BorderLayout.CENTER);
-        mainPanel.add(bottomPanel, BorderLayout.SOUTH);
-
-        UmlFlowService plugin = project.getService(UmlFlowService.class);
-        mainPanel.setName(title + " (审查)");
-        plugin.addFlow(mainPanel);
-    }
-
-    private JPanel createReviewTab(Project project, String title, String collectedCode) {
-        JPanel panel = new JPanel(new BorderLayout());
-
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        splitPane.setDividerLocation(500);
-        splitPane.setResizeWeight(0.5);
-
-        JPanel codePanel = new JPanel(new BorderLayout());
-        JTextArea codeArea = new JTextArea();
-        codeArea.setEditable(true);
-        codeArea.setText(collectedCode);
-        codeArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
-        codePanel.add(new JScrollPane(codeArea), BorderLayout.CENTER);
-
-        JPanel reviewPanel = new JPanel(new BorderLayout());
-        JTextArea reviewArea = new JTextArea();
-        reviewArea.setEditable(false);
-        reviewArea.setLineWrap(true);
-        reviewArea.setWrapStyleWord(true);
-        reviewArea.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
-        reviewArea.setText("点击\"审查代码\"按钮开始分析并获取优化建议...");
-
-        // Add margin to make it more readable
-        reviewArea.setMargin(new Insets(10, 10, 10, 10));
-
-        reviewPanel.add(new JScrollPane(reviewArea), BorderLayout.CENTER);
-
-        splitPane.setLeftComponent(codePanel);
-        splitPane.setRightComponent(reviewPanel);
-
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-
-        JLabel providerLabel = new JLabel("AI 提供商:");
-        java.util.List<IdeaSettings.CustomAiProviderConfig> availableProviders = AiUtils.getCustomProviders();
-        ComboBox<IdeaSettings.CustomAiProviderConfig> providerComboBox = new ComboBox<>(availableProviders.toArray(new IdeaSettings.CustomAiProviderConfig[0]));
-
-        JLabel specificModelLabel = new JLabel("具体模型:");
-        ComboBox<String> specificModelComboBox = new ComboBox<>();
-
-        providerComboBox.addActionListener(e -> {
-            IdeaSettings.CustomAiProviderConfig selected = (IdeaSettings.CustomAiProviderConfig) providerComboBox.getSelectedItem();
-            specificModelComboBox.removeAllItems();
-            if (selected != null && selected.getModels() != null) {
-                String[] models = selected.getModels().split(",");
-                for (String model : models) {
-                    specificModelComboBox.addItem(model.trim());
-                }
-                if (models.length > 0) {
-                    specificModelComboBox.setSelectedIndex(0);
-                }
-            }
-        });
-
-        if (!availableProviders.isEmpty()) {
-            providerComboBox.setSelectedIndex(-1);
-            providerComboBox.setSelectedIndex(0);
-        }
-
-        providerComboBox.setRenderer(new DefaultListCellRenderer() {
+        CodeAnalysisUIFactory.showInitialDialog(project, collectedCode, title, new CodeAnalysisUIFactory.AnalysisConfigProvider() {
             @Override
-            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                if (value instanceof IdeaSettings.CustomAiProviderConfig) {
-                    IdeaSettings.CustomAiProviderConfig provider = (IdeaSettings.CustomAiProviderConfig) value;
-                    setText(provider.getName());
-                }
-                return this;
-            }
-        });
-
-        buttonPanel.add(providerLabel);
-        buttonPanel.add(providerComboBox);
-        buttonPanel.add(specificModelLabel);
-        buttonPanel.add(specificModelComboBox);
-
-        JButton generateButton = new JButton("审查代码");
-        generateButton.addActionListener(e -> {
-            generateButton.setEnabled(false);
-            generateButton.setText("审查中...");
-
-            IdeaSettings.CustomAiProviderConfig selectedProvider = (IdeaSettings.CustomAiProviderConfig) providerComboBox.getSelectedItem();
-            String selectedModel = (String) specificModelComboBox.getSelectedItem();
-
-            if (selectedProvider == null) {
-                LOG.info("No AI provider selected or available");
-                Notifications.Bus.notify(new Notification(
-                        "com.yt.huq.idea",
-                        "无可用AI模型",
-                        "未选择AI提供商或没有可用的AI提供商。请在设置 > UmlFlowAiConfigurable 中配置至少一个提供商",
-                        NotificationType.ERROR),
-                        project);
-                generateButton.setEnabled(true);
-                generateButton.setText("审查代码");
-                return;
+            public String getPrompt(String code) {
+                String template = IdeaSettings.getInstance().getState().getReviewCodePrompt();
+                return String.format(template, code);
             }
 
-            new Task.Backgroundable(project, "审查代码", true, PerformInBackgroundOption.ALWAYS_BACKGROUND) {
-                @Override
-                public void run(@NotNull ProgressIndicator indicator) {
-                    indicator.setText("正在审查代码...");
-                    indicator.setIndeterminate(true);
+            @Override
+            public String getSystemMessage() {
+                return "你是一个高级Java开发专家和代码审查员。请提供专业、准确、可行的代码优化和重构建议。";
+            }
 
-                    String reviewPromptTemplate = IdeaSettings.getInstance().getState().getReviewCodePrompt();
-                    String prompt = String.format(reviewPromptTemplate, codeArea.getText());
+            @Override
+            public String getActionName() {
+                return "审查代码";
+            }
 
-                    AiUtils.AiConfig config = new AiUtils.AiConfig(selectedProvider, selectedModel);
-                    if (config.getApiKey() == null || config.getApiKey().trim().isEmpty()) {
-                        SwingUtilities.invokeLater(() -> {
-                            generateButton.setEnabled(true);
-                            Notifications.Bus.notify(new Notification(
-                                "com.yt.huq.idea",
-                                "API密钥未配置",
-                                "请在设置中为 " + selectedProvider.getName() + " 配置API密钥",
-                                NotificationType.WARNING),
-                                project);
-                        });
-                        return;
-                    }
-
-                    config.setSystemMessage("你是一个高级Java开发专家和代码审查员。请提供专业、准确、可行的代码优化和重构建议。")
-                          .setTemperature(0.7)
-                          .setMaxTokens(8000);
-
-                    AiUtils.AiResponse response = AiUtils.callAi(prompt, config);
-                    String reviewResult = response.isSuccess() ? response.getContent() : null;
-
-                    if (reviewResult != null && !reviewResult.isEmpty()) {
-                        String finalReviewResult = reviewResult;
-                        SwingUtilities.invokeLater(() -> {
-                            reviewArea.setText(finalReviewResult);
-                            // Move caret to top
-                            reviewArea.setCaretPosition(0);
-
-                            generateButton.setEnabled(true);
-                            generateButton.setText("重新审查");
-                        });
-                    } else {
-                        SwingUtilities.invokeLater(() -> {
-                            String errorMsg = "代码审查失败，请检查API设置和网络连接";
-                            if (response != null && !response.isSuccess() && response.getErrorMessage() != null) {
-                                errorMsg = "代码审查失败: " + response.getErrorMessage();
-                            }
-
-                            Notifications.Bus.notify(new Notification(
-                                    "com.yt.huq.idea",
-                                    "代码审查",
-                                    errorMsg,
-                                    NotificationType.ERROR),
-                                    project);
-
-                            generateButton.setEnabled(true);
-                            generateButton.setText("审查代码");
-                        });
-                    }
-                }
-            }.queue();
+            @Override
+            public String getInitialMessage() {
+                return "点击\"审查代码\"按钮开始分析...";
+            }
         });
-        buttonPanel.add(generateButton);
-
-        JButton copyButton = new JButton("复制审查结果");
-        copyButton.addActionListener(e -> {
-            copyToClipboard(reviewArea.getText());
-            Notifications.Bus.notify(new Notification(
-                    "com.yt.huq.idea",
-                    "代码审查",
-                    "审查结果已复制到剪贴板",
-                    NotificationType.INFORMATION),
-                    project);
-        });
-        buttonPanel.add(copyButton);
-
-        panel.add(splitPane, BorderLayout.CENTER);
-        panel.add(buttonPanel, BorderLayout.SOUTH);
-
-        return panel;
-    }
-
-    private void copyToClipboard(String text) {
-        StringSelection stringSelection = new StringSelection(text);
-        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-        clipboard.setContents(stringSelection, null);
     }
 
     private String collectCodeFromCallStack(CallStack callStack) {
