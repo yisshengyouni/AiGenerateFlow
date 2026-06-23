@@ -4,6 +4,8 @@ import com.huq.idea.flow.apidoc.service.UmlFlowService;
 import com.huq.idea.flow.config.config.IdeaSettings;
 import com.huq.idea.flow.model.CallStack;
 import com.huq.idea.flow.model.MethodDescription;
+import com.huq.idea.flow.apidoc.ui.CodeAnalysisUIFactory;
+import java.util.HashSet;
 import com.huq.idea.flow.util.AiUtils;
 import com.huq.idea.flow.util.MethodUtils;
 import com.intellij.notification.Notification;
@@ -305,26 +307,27 @@ public class GenerateUnitTestAction extends AnAction implements DumbAware {
 
     private String collectCodeFromCallStack(CallStack callStack) {
         StringBuilder codeBuilder = new StringBuilder();
-        appendMethodCode(codeBuilder, callStack);
+        HashSet<String> seenMethods = new HashSet<>();
+        appendMethodCode(codeBuilder, callStack, seenMethods);
         for (CallStack child : callStack.getChildren()) {
-            collectCodeFromChildCallStack(codeBuilder, child, 1);
+            collectCodeFromChildCallStack(codeBuilder, child, 1, seenMethods);
         }
         return codeBuilder.toString();
     }
 
-    private void collectCodeFromChildCallStack(StringBuilder codeBuilder, CallStack callStack, int depth) {
+    private void collectCodeFromChildCallStack(StringBuilder codeBuilder, CallStack callStack, int depth, HashSet<String> seenMethods) {
         if (depth > 10) {
             return;
         }
         if (!callStack.isRecursive()) {
-            appendMethodCode(codeBuilder, callStack);
+            appendMethodCode(codeBuilder, callStack, seenMethods);
         }
         for (CallStack child : callStack.getChildren()) {
-            collectCodeFromChildCallStack(codeBuilder, child, depth + 1);
+            collectCodeFromChildCallStack(codeBuilder, child, depth + 1, seenMethods);
         }
     }
 
-    private void appendMethodCode(StringBuilder codeBuilder, CallStack callStack) {
+    private void appendMethodCode(StringBuilder codeBuilder, CallStack callStack, HashSet<String> seenMethods) {
         MethodDescription methodDesc = callStack.getMethodDescription();
         if (methodDesc == null) {
             return;
@@ -335,7 +338,7 @@ public class GenerateUnitTestAction extends AnAction implements DumbAware {
             return;
         }
 
-        if (codeBuilder.indexOf(methodDesc.buildMethodId()) != -1) {
+        if (!seenMethods.add(methodDesc.buildMethodId())) {
             return;
         }
 
