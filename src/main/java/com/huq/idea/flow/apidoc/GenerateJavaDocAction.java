@@ -1,9 +1,8 @@
 package com.huq.idea.flow.apidoc;
 
-import com.huq.idea.flow.apidoc.service.UmlFlowService;
+import com.huq.idea.flow.apidoc.ui.CodeAnalysisUIFactory;
 import com.huq.idea.flow.config.config.IdeaSettings;
 import com.huq.idea.flow.model.CallStack;
-import com.huq.idea.flow.apidoc.ui.CodeAnalysisUIFactory;
 import com.huq.idea.flow.model.MethodDescription;
 import com.huq.idea.flow.util.MethodUtils;
 import com.intellij.notification.Notification;
@@ -28,10 +27,10 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * Action to analyze and generate JUnit 5 tests for Java code using AI
+ * Action to analyze and generate JavaDoc for Java code using AI
  */
-public class GenerateUnitTestAction extends AnAction implements DumbAware {
-    private static final Logger LOG = Logger.getInstance(GenerateUnitTestAction.class);
+public class GenerateJavaDocAction extends AnAction implements DumbAware {
+    private static final Logger LOG = Logger.getInstance(GenerateJavaDocAction.class);
 
     @Override
     public void actionPerformed(AnActionEvent e) {
@@ -40,19 +39,10 @@ public class GenerateUnitTestAction extends AnAction implements DumbAware {
             return;
         }
 
+        Editor editor = e.getData(LangDataKeys.EDITOR);
         PsiFile psiFile = e.getData(LangDataKeys.PSI_FILE);
-        if (!(psiFile instanceof PsiJavaFile)) {
-            Notifications.Bus.notify(new Notification(
-                    "com.yt.huq.idea",
-                    "生成单元测试",
-                    "此操作仅适用于Java文件",
-                    NotificationType.ERROR),
-                    project);
-            return;
-        }
 
-        Editor editor = e.getData(com.intellij.openapi.actionSystem.CommonDataKeys.EDITOR);
-        if (editor == null) {
+        if (editor == null || !(psiFile instanceof PsiJavaFile)) {
             return;
         }
 
@@ -63,24 +53,20 @@ public class GenerateUnitTestAction extends AnAction implements DumbAware {
         });
 
         if (method == null) {
-            Notifications.Bus.notify(new Notification(
-                    "com.yt.huq.idea",
-                    "生成单元测试",
-                    "光标位置未找到方法",
-                    NotificationType.ERROR),
-                    project);
             return;
         }
 
-        CallStack callStack = ReadAction.compute(() -> {
-            EnhancedMethodChainVisitor methodChainVisitor = new EnhancedMethodChainVisitor();
-            return methodChainVisitor.generateMethodChains(method, null);
-        });
+        String className = ReadAction.compute(() -> method.getContainingClass() != null ? method.getContainingClass().getName() : "Unknown");
+        String methodName = ReadAction.compute(method::getName);
+        String methodText = ReadAction.compute(method::getText);
+        String returnType = ReadAction.compute(() -> method.getReturnType() != null ? method.getReturnType().getPresentableText() : "void");
+
+        CallStack callStack = new CallStack();
+        MethodDescription description = new MethodDescription(method, className, methodText, methodName, method.getDocComment(), returnType);
+        callStack.setMethodDescription(description);
 
         String collectedCode = collectCodeFromCallStack(callStack);
 
-        String className = ReadAction.compute(() -> method.getContainingClass() != null ? method.getContainingClass().getName() : "Unknown");
-        String methodName = ReadAction.compute(method::getName);
         String title = className + "." + methodName;
 
         SwingUtilities.invokeLater(() ->
@@ -94,13 +80,13 @@ public class GenerateUnitTestAction extends AnAction implements DumbAware {
             @Override
             public String getPrompt(String collectedCode) {
                 IdeaSettings.PromptConfig selectedPromptConfig = promptComboBox != null ? (IdeaSettings.PromptConfig) promptComboBox.getSelectedItem() : null;
-                String testPromptTemplate = selectedPromptConfig != null ? selectedPromptConfig.getPrompt() : IdeaSettings.getInstance().getState().getGenerateTestPrompt();
-                return String.format(testPromptTemplate, collectedCode);
+                String javaDocPromptTemplate = selectedPromptConfig != null ? selectedPromptConfig.getPrompt() : IdeaSettings.getInstance().getState().getGenerateJavaDocPrompt();
+                return String.format(javaDocPromptTemplate, collectedCode);
             }
 
             @Override
             public JComboBox<IdeaSettings.PromptConfig> getPromptComboBox() {
-                java.util.List<IdeaSettings.PromptConfig> prompts = IdeaSettings.getInstance().getState().getTestPrompts();
+                java.util.List<IdeaSettings.PromptConfig> prompts = IdeaSettings.getInstance().getState().getJavaDocPrompts();
                 promptComboBox = new ComboBox<>(prompts.toArray(new IdeaSettings.PromptConfig[0]));
 
                 if (!prompts.isEmpty()) {
@@ -120,8 +106,8 @@ public class GenerateUnitTestAction extends AnAction implements DumbAware {
             }
         };
 
-        String systemMessage = "你是一个高级Java开发专家和测试工程师。请提供高质量、可以直接运行的JUnit 5单元测试代码。如果包含Markdown代码块符号(如```java)，请去掉，只输出纯代码。";
-        CodeAnalysisUIFactory.showInitialDialog(project, collectedCode, "生成单元测试: " + title, promptProvider, "生成测试代码", systemMessage);
+        String systemMessage = "你是一个高级Java开发专家。请提供详细、专业的JavaDoc注释。如果包含Markdown代码块符号(如```java)，请去掉，只输出纯代码。";
+        CodeAnalysisUIFactory.showInitialDialog(project, collectedCode, "生成JavaDoc: " + title, promptProvider, "生成JavaDoc", systemMessage);
     }
 
     private String collectCodeFromCallStack(CallStack callStack) {
@@ -169,5 +155,16 @@ public class GenerateUnitTestAction extends AnAction implements DumbAware {
         codeBuilder.append("// token: ").append(methodDesc.buildMethodId()).append("\n");
         codeBuilder.append(methodCode);
         codeBuilder.append("\n// ").append("=".repeat(80)).append("\n\n");
+    }
+
+    @Override
+    public void update(@NotNull AnActionEvent e) {
+        super.update(e);
+        Project project = e.getProject();
+        Editor editor = e.getData(LangDataKeys.EDITOR);
+        PsiFile psiFile = e.getData(LangDataKeys.PSI_FILE);
+
+        boolean enabled = project != null && editor != null && psiFile instanceof PsiJavaFile;
+        e.getPresentation().setEnabledAndVisible(enabled);
     }
 }
