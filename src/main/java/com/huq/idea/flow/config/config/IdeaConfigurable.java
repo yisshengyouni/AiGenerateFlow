@@ -37,6 +37,13 @@ public class IdeaConfigurable implements Configurable {
         return true;
     }
 
+        @Override
+    public void reset() {
+        if (settingsComponent != null) {
+            settingsComponent.init(IdeaSettings.getInstance().getState());
+        }
+    }
+
     @Override
     public void apply() {
         IdeaSettings.State state = IdeaSettings.getInstance().getState();
@@ -48,8 +55,12 @@ public class IdeaConfigurable implements Configurable {
         state.setBuildFlowPrompt(settingsComponent.getBuildFlowPrompt());
         state.setFlowPrompts(settingsComponent.getFlowPrompts());
         state.setClassPrompts(settingsComponent.getClassPrompts());
-        state.setSequencePrompts(settingsComponent.getSequencePrompts());
+                state.setSequencePrompts(settingsComponent.getSequencePrompts());
         state.setStatePrompts(settingsComponent.getStatePrompts());
+        state.setExplainPrompts(settingsComponent.getExplainPrompts());
+        state.setReviewPrompts(settingsComponent.getReviewPrompts());
+        state.setTestPrompts(settingsComponent.getTestPrompts());
+        state.setOptimizePrompts(settingsComponent.getOptimizePrompts());
 
         state.setPlantumlPathVal(settingsComponent.getPlantumlPathValue());
         state.setRelevantClassPatterns(settingsComponent.getRelevantPatterns());
