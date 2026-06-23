@@ -23,7 +23,7 @@ import com.huq.idea.flow.apidoc.ui.CodeAnalysisUIFactory;
 import javax.swing.*;
 import java.awt.*;
 
-public class ReviewCodeAction extends AnAction implements DumbAware {
+public class GenerateJavaDocAction extends AnAction implements DumbAware {
 
     @Override
     public void actionPerformed(AnActionEvent e) {
@@ -36,7 +36,7 @@ public class ReviewCodeAction extends AnAction implements DumbAware {
         if (!(psiFile instanceof PsiJavaFile)) {
             Notifications.Bus.notify(new Notification(
                     "com.yt.huq.idea",
-                    "审查代码",
+                    "生成注释",
                     "此操作仅适用于Java文件",
                     NotificationType.ERROR),
                     project);
@@ -57,7 +57,7 @@ public class ReviewCodeAction extends AnAction implements DumbAware {
         if (currentMethod == null) {
             Notifications.Bus.notify(new Notification(
                     "com.yt.huq.idea",
-                    "审查代码",
+                    "生成注释",
                     "光标位置未找到方法",
                     NotificationType.ERROR),
                     project);
@@ -81,13 +81,13 @@ public class ReviewCodeAction extends AnAction implements DumbAware {
                 @Override
                 public String getPrompt(String code) {
                     IdeaSettings.PromptConfig selected = promptComboBox != null ? (IdeaSettings.PromptConfig) promptComboBox.getSelectedItem() : null;
-                    String promptTemplate = selected != null ? selected.getPrompt() : IdeaSettings.getInstance().getState().getReviewCodePrompt();
+                    String promptTemplate = selected != null ? selected.getPrompt() : IdeaSettings.getInstance().getState().getGenerateJavaDocPrompt();
                     return String.format(promptTemplate, code);
                 }
 
                 @Override
                 public JComboBox<IdeaSettings.PromptConfig> getPromptComboBox() {
-                    java.util.List<IdeaSettings.PromptConfig> prompts = IdeaSettings.getInstance().getState().getReviewPrompts();
+                    java.util.List<IdeaSettings.PromptConfig> prompts = IdeaSettings.getInstance().getState().getJavaDocPrompts();
                     promptComboBox = new JComboBox<>(prompts.toArray(new IdeaSettings.PromptConfig[0]));
                     if (!prompts.isEmpty()) {
                         promptComboBox.setSelectedIndex(0);
@@ -109,12 +109,12 @@ public class ReviewCodeAction extends AnAction implements DumbAware {
             CodeAnalysisUIFactory.showInitialDialog(
                     project,
                     collectedCode,
-                    "审查代码: " + title,
+                    "生成JavaDoc注释: " + title,
                     promptProvider,
-                    "审查代码",
-                    "点击\"审查代码\"按钮开始分析并获取优化建议...",
-                    "你是一个高级Java开发专家和代码审查员。请提供专业、准确、可行的代码优化和重构建议。",
-                    0.7
+                    "生成注释",
+                    "点击\"生成注释\"按钮开始分析并生成代码注释...",
+                    "你是一个高级Java开发专家。请提供规范、完整、准确的JavaDoc注释。",
+                    0.2
             );
         });
     }
