@@ -24,10 +24,10 @@ import com.intellij.psi.PsiMethod;
 import javax.swing.*;
 
 /**
- * Action to review Java code using AI
+ * Action to generate Javadoc for Java code using AI
  */
-public class ReviewCodeAction extends AnAction implements DumbAware {
-    private static final Logger LOG = Logger.getInstance(ReviewCodeAction.class);
+public class GenerateJavadocAction extends AnAction implements DumbAware {
+    private static final Logger LOG = Logger.getInstance(GenerateJavadocAction.class);
 
     @Override
     public void actionPerformed(AnActionEvent e) {
@@ -40,7 +40,7 @@ public class ReviewCodeAction extends AnAction implements DumbAware {
         if (!(psiFile instanceof PsiJavaFile)) {
             Notifications.Bus.notify(new Notification(
                     "com.yt.huq.idea",
-                    "代码审查",
+                    "生成Javadoc",
                     "此操作仅适用于Java文件",
                     NotificationType.ERROR),
                     project);
@@ -61,7 +61,7 @@ public class ReviewCodeAction extends AnAction implements DumbAware {
         if (method == null) {
             Notifications.Bus.notify(new Notification(
                     "com.yt.huq.idea",
-                    "代码审查",
+                    "生成Javadoc",
                     "光标位置未找到方法",
                     NotificationType.ERROR),
                     project);
@@ -84,15 +84,15 @@ public class ReviewCodeAction extends AnAction implements DumbAware {
                 project,
                 collectedCode,
                 title,
-                "代码审查",
-                "审查代码",
-                "你是一个高级Java开发专家和代码审查员。请提供专业、准确、可行的代码优化和重构建议。",
-                "点击\"审查代码\"按钮开始分析并获取优化建议...",
+                "生成Javadoc",
+                "生成Javadoc",
+                "你是一个高级Java开发专家。请生成标准、规范的Javadoc注释。如果包含Markdown代码块符号(如```java)，请去掉，只输出纯代码。",
+                "点击\"生成Javadoc\"按钮开始生成...",
                 new CodeAnalysisUIFactory.PromptProvider() {
                     @Override
                     public String getPrompt(String code) {
-                        String reviewPromptTemplate = IdeaSettings.getInstance().getState().getReviewCodePrompt();
-                        return String.format(reviewPromptTemplate, code);
+                        String generateJavadocPromptTemplate = IdeaSettings.getInstance().getState().getGenerateJavadocPrompt();
+                        return String.format(generateJavadocPromptTemplate, code);
                     }
                 }
             )
