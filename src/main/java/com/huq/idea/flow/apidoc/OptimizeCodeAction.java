@@ -21,9 +21,9 @@ import com.intellij.psi.PsiMethod;
 import javax.swing.*;
 
 /**
- * Action to review Java code using AI
+ * Action to optimize and refactor Java code using AI
  */
-public class ReviewCodeAction extends AnAction implements DumbAware {
+public class OptimizeCodeAction extends AnAction implements DumbAware {
 
     @Override
     public void actionPerformed(AnActionEvent e) {
@@ -36,7 +36,7 @@ public class ReviewCodeAction extends AnAction implements DumbAware {
         if (!(psiFile instanceof PsiJavaFile)) {
             Notifications.Bus.notify(new Notification(
                     "com.yt.huq.idea",
-                    "代码审查",
+                    "代码优化",
                     "此操作仅适用于Java文件",
                     NotificationType.ERROR),
                     project);
@@ -57,7 +57,7 @@ public class ReviewCodeAction extends AnAction implements DumbAware {
         if (method == null) {
             Notifications.Bus.notify(new Notification(
                     "com.yt.huq.idea",
-                    "代码审查",
+                    "代码优化",
                     "光标位置未找到方法",
                     NotificationType.ERROR),
                     project);
@@ -75,6 +75,6 @@ public class ReviewCodeAction extends AnAction implements DumbAware {
         String title = className + "." + method.getName();
 
         SwingUtilities.invokeLater(() ->
-            CodeAnalysisUIFactory.showAnalysisDialog(project, collectedCode, title, CodeAnalysisUIFactory.AnalysisType.REVIEW));
+            CodeAnalysisUIFactory.showAnalysisDialog(project, collectedCode, title, CodeAnalysisUIFactory.AnalysisType.OPTIMIZE));
     }
 }
